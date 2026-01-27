@@ -21,6 +21,12 @@
   - 密码强度校验（8位+字母数字）。
   - 防暴破与敏感操作审计。
 
+## 界面预览
+
+![徽章页面](img/a35f0ef1-bb32-4c83-84f2-a945272ca06a.png)
+
+![个人资料](img/f770f422-832b-451c-a17b-58dd78115edd.png)
+
 ## 技术栈
 
 - **Frontend**: Vue 3, Vite, Tailwind CSS, Element Plus, Pinia
