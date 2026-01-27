@@ -80,7 +80,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen" style="background-color: var(--bg-primary);">
+  <div class="min-h-screen flex flex-col" style="background-color: var(--bg-primary);">
     <!-- 导航栏 -->
     <nav class="nav-container">
       <div class="nav-inner">
@@ -153,9 +153,16 @@ onMounted(async () => {
     </nav>
 
     <!-- 主内容 -->
-    <main class="relative">
+    <main class="relative flex-grow">
       <router-view />
     </main>
+
+    <!-- 页脚 -->
+    <footer class="py-6 text-center border-t border-[#2d2a26] mt-auto">
+      <p class="font-mono-retro text-xs text-[#5c5550]">
+        由 <a href="https://github.com/Masaicker" target="_blank" rel="noopener noreferrer" class="text-[#8b7355] hover:text-[#c4941f] transition-colors font-bold no-underline">@Masaicker</a> 开发
+      </p>
+    </footer>
   </div>
 </template>
 

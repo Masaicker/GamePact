@@ -20,8 +20,8 @@ if (Test-Path $backendDir) {
         if (Test-Path ".env.example") {
             Write-Host "  Generating secure configuration..." -ForegroundColor Gray
             
-            # 读取模板
-            $envContent = Get-Content ".env.example" -Raw
+            # 读取模板 (强制 UTF8)
+            $envContent = Get-Content ".env.example" -Raw -Encoding UTF8
             
             # 生成 64 字符随机密钥
             $randomSecret = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 64 | % {[char]$_})
@@ -29,7 +29,7 @@ if (Test-Path $backendDir) {
             # 替换密钥
             $newEnvContent = $envContent -replace "JWT_SECRET=.*", "JWT_SECRET=$randomSecret"
             
-            # 写入 .env
+            # 写入 .env (强制 UTF8)
             Set-Content ".env" $newEnvContent -Encoding UTF8
             
             Write-Host "  Created backend .env with a unique random JWT_SECRET." -ForegroundColor Green
