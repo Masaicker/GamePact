@@ -30,25 +30,18 @@
 
 ## 快速开始 (Windows)
 
-本项目内置了 PowerShell 自动化脚本，可一键启动或关闭所有服务。
+本项目内置了 PowerShell 自动化脚本，可一键完成环境配置、启动和关闭。
 
 ### 环境要求
 - Node.js (v18+)
 - npm
 
-### 1. 初始化
-首次运行前，请安装依赖并初始化数据库：
-
-```powershell
-# 后端
-cd backend
-npm install
-npx prisma migrate dev --name init
-
-# 前端
-cd frontend
-npm install
-```
+### 1. 初始化 (仅首次)
+双击根目录下的 **`setup.ps1`**，脚本将自动：
+- 安装前后端依赖 (`npm install`)
+- 配置环境变量 (`.env`)
+- 初始化数据库并生成表结构 (`prisma migrate`)
+- 注入初始种子数据
 
 ### 2. 一键启动
 双击根目录下的 **`start.ps1`**，脚本将自动：
