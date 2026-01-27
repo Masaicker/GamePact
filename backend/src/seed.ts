@@ -25,15 +25,19 @@ async function main() {
   // 2. 创建测试邀请码
   console.log('\n创建测试邀请码...');
   const inviteCodes = [
-    await prisma.invitation.create({
-      data: {
+    await prisma.invitation.upsert({
+      where: { code: 'TEST2024CODE01' },
+      update: {},
+      create: {
         code: 'TEST2024CODE01',
         status: 'pending',
         createdBy: { connect: { id: admin.id } },
       },
     }),
-    await prisma.invitation.create({
-      data: {
+    await prisma.invitation.upsert({
+      where: { code: 'GAME2024PACT' },
+      update: {},
+      create: {
         code: 'GAME2024PACT',
         status: 'pending',
         createdBy: { connect: { id: admin.id } },
@@ -90,9 +94,24 @@ async function main() {
   ];
 
   const allBadges = [
-    ...rankBadges.map((b) => ({ ...b, category: 'rank' as const, description: getBadgeDescription(b.code) })),
-    ...achievementBadges.map((b) => ({ ...b, category: 'achievement' as const, description: getBadgeDescription(b.code) })),
-    ...behaviorBadges.map((b) => ({ ...b, category: 'behavior' as const, description: getBadgeDescription(b.code) })),
+    ...rankBadges.map((b) => ({
+      ...b,
+      category: 'rank' as const,
+      description: getBadgeDescription(b.code),
+      unlockCondition: JSON.stringify(getBadgeUnlockCondition(b.code)),
+    })),
+    ...achievementBadges.map((b) => ({
+      ...b,
+      category: 'achievement' as const,
+      description: getBadgeDescription(b.code),
+      unlockCondition: JSON.stringify({}),
+    })),
+    ...behaviorBadges.map((b) => ({
+      ...b,
+      category: 'behavior' as const,
+      description: getBadgeDescription(b.code),
+      unlockCondition: JSON.stringify({}),
+    })),
   ];
 
   for (const badge of allBadges) {
@@ -104,6 +123,7 @@ async function main() {
         description: badge.description,
         category: badge.category,
         rarity: badge.rarity,
+        unlockCondition: badge.unlockCondition,
       },
       create: {
         code: badge.code,
@@ -112,7 +132,7 @@ async function main() {
         description: badge.description,
         category: badge.category,
         rarity: badge.rarity,
-        unlockCondition: JSON.stringify({}),
+        unlockCondition: badge.unlockCondition,
       },
     });
   }
@@ -130,15 +150,15 @@ async function main() {
 function getBadgeDescription(code: string): string {
   const descriptions: Record<string, string> = {
     // 等级徽章
-    legendary: 'RP达到150+，获得传说缔约者称号',
-    diamond: 'RP达到130-149，获得钻石战神称号',
-    gold: 'RP达到115-129，获得黄金大腿称号',
-    silver: 'RP达到100-114，获得白银骑士称号',
-    bronze: 'RP达到85-99，获得青铜玩家称号',
-    pigeon: 'RP降到70-84，成为扑棱鸽子',
-    old_pigeon: 'RP降到50-69，成为老鸽子',
-    pigeon_king: 'RP降到30-49，成为鸽王之王',
-    missing: 'RP低于30，成为失踪人口',
+    legendary: 'RP达到500+，获得传说缔约者称号',
+    diamond: 'RP达到350-499，获得钻石战神称号',
+    gold: 'RP达到250-349，获得黄金大腿称号',
+    silver: 'RP达到180-249，获得白银骑士称号',
+    bronze: 'RP达到120-179，获得青铜玩家称号',
+    pigeon: 'RP降到80-119，成为扑棱鸽子',
+    old_pigeon: 'RP降到50-79，成为老鸽子',
+    pigeon_king: 'RP降到20-49，成为鸽王之王',
+    missing: 'RP低于20，成为失踪人口',
 
     // 成就徽章
     iron_man: '连续20次参加活动不缺席',
@@ -168,6 +188,23 @@ function getBadgeDescription(code: string): string {
   };
 
   return descriptions[code] || '';
+}
+
+function getBadgeUnlockCondition(code: string): Record<string, number> {
+  const conditions: Record<string, Record<string, number>> = {
+    // 等级徽章
+    legendary: { minRp: 500 },
+    diamond: { minRp: 350 },
+    gold: { minRp: 250 },
+    silver: { minRp: 180 },
+    bronze: { minRp: 120 },
+    pigeon: { minRp: 80 },
+    old_pigeon: { minRp: 50 },
+    pigeon_king: { minRp: 20 },
+    missing: { maxRp: 19 },
+  };
+
+  return conditions[code] || {};
 }
 
 main()

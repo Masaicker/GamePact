@@ -47,7 +47,18 @@ if (Test-Path $backendDir) {
     # 3. Setup Database
     Write-Host "  Initializing database..." -ForegroundColor Gray
     cmd /c "npx prisma generate"
-    cmd /c "npx prisma migrate dev --name init"
+
+    # 检查是否有迁移文件
+    $migrationsPath = Join-Path $backendDir "prisma\migrations"
+    $hasMigrations = Test-Path (Join-Path $migrationsPath "*") -PathType Container
+
+    if ($hasMigrations) {
+        Write-Host "  Applying existing migrations..." -ForegroundColor Gray
+        cmd /c "npx prisma migrate deploy"
+    } else {
+        Write-Host "  Creating initial migration..." -ForegroundColor Gray
+        cmd /c "npx prisma migrate dev --name init"
+    }
     
     # 4. Seed Database (Optional)
     Write-Host "  Seeding database..." -ForegroundColor Gray
