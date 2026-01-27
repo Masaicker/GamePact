@@ -159,7 +159,7 @@ const fetchBadges = async () => {
   loadingBadges.value = true;
   try {
     const id = route.params.id as string;
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const apiBaseUrl = import.meta.env.VITE_API_URL;
     const token = localStorage.getItem('token');
 
     // 获取等级徽章

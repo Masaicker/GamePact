@@ -12,6 +12,30 @@ $rootDir = $PSScriptRoot
 $backendDir  = Join-Path $rootDir "backend"
 $frontendDir = Join-Path $rootDir "frontend"
 
+# Load .env configuration
+$backendPort = "3001"
+$frontendPort = "5173"
+
+# Read backend .env
+$backendEnvFile = Join-Path $backendDir ".env"
+if (Test-Path $backendEnvFile) {
+    Get-Content $backendEnvFile | ForEach-Object {
+        if ($_ -match "^PORT=(\d+)") {
+            $backendPort = $matches[1]
+        }
+    }
+}
+
+# Read frontend .env
+$frontendEnvFile = Join-Path $frontendDir ".env"
+if (Test-Path $frontendEnvFile) {
+    Get-Content $frontendEnvFile | ForEach-Object {
+        if ($_ -match "^VITE_PORT=(\d+)") {
+            $frontendPort = $matches[1]
+        }
+    }
+}
+
 # Validate directories
 if (-not (Test-Path $backendDir)) {
     Write-Host "ERROR: Backend directory not found:" -ForegroundColor Red
@@ -47,13 +71,13 @@ Start-Process cmd `
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Services started successfully!" -ForegroundColor Green
-Write-Host "  Backend : http://localhost:3001" -ForegroundColor Cyan
-Write-Host "  Frontend: http://localhost:5173" -ForegroundColor Cyan
+Write-Host "  Backend : http://localhost:$backendPort" -ForegroundColor Cyan
+Write-Host "  Frontend: http://localhost:$frontendPort" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 
 # Open browser
-Start-Process "http://localhost:5173"
+Start-Process "http://localhost:$frontendPort"
 
 Write-Host "Launcher finished. Closing in 2 seconds..." -ForegroundColor Gray
 Start-Sleep -Seconds 2

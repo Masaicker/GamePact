@@ -70,7 +70,7 @@ router.beforeEach(async (to, from, next) => {
   // 如果有 token 但没有用户信息，等待加载
   if (userStore.token && !userStore.user) {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const apiUrl = import.meta.env.VITE_API_URL;
       const response = await fetch(`${apiUrl}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${userStore.token}`,

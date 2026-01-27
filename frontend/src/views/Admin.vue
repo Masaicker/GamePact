@@ -666,7 +666,7 @@ const loadUsers = async () => {
     const response = await adminApi.getAuditLogs({ limit: 100 });
     // 从审计日志或用户API获取用户列表
     // 这里需要调用实际的用户列表API
-    const usersResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/users`, {
+    const usersResponse = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json',

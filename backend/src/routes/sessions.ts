@@ -892,7 +892,7 @@ router.put('/:id/settle', async (req: Request, res: Response) => {
       // 解锁行为徽章
       if (badgeCode) {
         try {
-          await fetch(`${process.env.BASE_URL || 'http://localhost:3001'}/api/badges/unlock-behavior`, {
+          await fetch(`${process.env.BASE_URL}/api/badges/unlock-behavior`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -912,7 +912,7 @@ router.put('/:id/settle', async (req: Request, res: Response) => {
 
     // 为发起人解锁发起活动徽章
     try {
-      await fetch(`${process.env.BASE_URL || 'http://localhost:3001'}/api/badges/unlock-behavior`, {
+      await fetch(`${process.env.BASE_URL}/api/badges/unlock-behavior`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -931,7 +931,7 @@ router.put('/:id/settle', async (req: Request, res: Response) => {
     // 为所有参与者检查成就徽章
     for (const participant of session.participants) {
       try {
-        await fetch(`${process.env.BASE_URL || 'http://localhost:3001'}/api/badges/check-achievements`, {
+        await fetch(`${process.env.BASE_URL}/api/badges/check-achievements`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1109,7 +1109,7 @@ router.put('/:id/cancel', async (req: Request, res: Response) => {
       // 解锁行为徽章
       if (badgeCode) {
         try {
-          await fetch(`${process.env.BASE_URL || 'http://localhost:3001'}/api/badges/unlock-behavior`, {
+          await fetch(`${process.env.BASE_URL}/api/badges/unlock-behavior`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1129,7 +1129,7 @@ router.put('/:id/cancel', async (req: Request, res: Response) => {
 
     // 为发起人解锁发起活动徽章
     try {
-      await fetch(`${process.env.BASE_URL || 'http://localhost:3001'}/api/badges/unlock-behavior`, {
+      await fetch(`${process.env.BASE_URL}/api/badges/unlock-behavior`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1148,7 +1148,7 @@ router.put('/:id/cancel', async (req: Request, res: Response) => {
     // 为所有参与者检查成就徽章
     for (const participant of session.participants) {
       try {
-        await fetch(`${process.env.BASE_URL || 'http://localhost:3001'}/api/badges/check-achievements`, {
+        await fetch(`${process.env.BASE_URL}/api/badges/check-achievements`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

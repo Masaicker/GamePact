@@ -8,6 +8,18 @@ import { PrismaClient } from '@prisma/client';
 // 加载环境变量
 dotenv.config();
 
+// 验证必需的环境变量
+const requiredEnvVars = ['PORT', 'DATABASE_URL', 'JWT_SECRET', 'BASE_URL', 'CORS_ORIGIN'];
+const missing = requiredEnvVars.filter(key => !process.env[key]);
+
+if (missing.length > 0) {
+  console.error('❌ 缺少必需的环境变量配置:');
+  missing.forEach(key => console.error(`   - ${key}`));
+  console.error('\n请检查 backend/.env 文件是否配置完整。');
+  console.error('可以从 backend/.env.example 复制模板。\n');
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
