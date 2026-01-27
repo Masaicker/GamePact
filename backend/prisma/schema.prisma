@@ -1,0 +1,176 @@
+// Prisma Schema for GamePact
+// 数据库配置
+datasource db {
+  provider = "sqlite"        // 本地开发
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==================== 用户相关 ====================
+
+// 用户表
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique           // 登录用户名
+  displayName  String                      // 显示昵称
+  passwordHash String                      // 密码哈希
+  rp           Int       @default(100)     // 信誉点数
+  isAdmin      Boolean   @default(false)   // 是否管理员
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?                   // 软删除时间戳
+
+  // 关联
+  sessions        Session[]
+  participants    SessionParticipant[]
+  invitations     Invitation[]         @relation("CreatedBy")
+  scoreHistory    ScoreHistory[]
+  userBadges      UserBadge[]
+  auditLogs       AdminAuditLog[]
+  usedInvite      Invitation?          @relation("UsedBy")
+
+  @@map("users")
+}
+
+// 邀请码表
+model Invitation {
+  id         String    @id @default(uuid())
+  code       String    @unique          // 邀请码
+  status     String    @default("pending") // pending/used/expired
+  createdBy  User?     @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById String?
+  usedBy     User?     @relation("UsedBy", fields: [usedById], references: [id])
+  usedById   String?   @unique
+  usedAt     DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("invitations")
+}
+
+// ==================== 活动相关 ====================
+
+// 活动表
+model Session {
+  id              String   @id @default(uuid())
+  initiatorId     String                    // 发起人ID
+  status          String   @default("voting") // voting/confirmed/playing/settled/cancelled
+  gameOptions     String                    // JSON: 候选游戏列表
+  finalGame       String?                   // 最终确定的游戏
+  startTime       DateTime                  // 约定开始时间
+  endVotingTime   DateTime                  // 投票截止时间
+  minPlayers      Int      @default(2)      // 最小成行人数
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 关联
+  initiator     User                 @relation(fields: [initiatorId], references: [id])
+  participants  SessionParticipant[]
+  scoreHistory  ScoreHistory[]
+
+  @@map("sessions")
+}
+
+// 参与记录表
+model SessionParticipant {
+  id           String    @id @default(uuid())
+  sessionId    String                      // 活动ID
+  userId       String                      // 用户ID
+  voteRanking  String?                     // JSON: 游戏排序
+  votedAt      DateTime?
+  isExcused    Boolean   @default(false)   // 是否提前请假
+  excusedAt    DateTime?
+  excuseReason String?
+  isPresent    Boolean?                    // 最终是否到场
+  settledBy    String?                     // 结算操作人ID
+  settledAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // 关联
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@map("session_participants")
+}
+
+// ==================== 积分相关 ====================
+
+// 积分变动表
+model ScoreHistory {
+  id          String    @id @default(uuid())
+  userId      String                      // 用户ID
+  sessionId   String?                     // 关联活动ID
+  scoreChange Int                         // 积分变化 (+5/-10等)
+  reason      String                      // 原因类型
+  description String?                     // 详细描述
+  isDeleted   Boolean   @default(false)   // 是否软删除
+  deletedBy   String?                     // 删除操作人ID
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  // 关联
+  user    User     @relation(fields: [userId], references: [id])
+  session Session? @relation(fields: [sessionId], references: [id])
+
+  @@map("score_history")
+}
+
+// ==================== 徽章相关 ====================
+
+// 徽章定义表
+model Badge {
+  id               String   @id @default(uuid())
+  code             String   @unique            // 徽章代码: iron_man, first_win
+  name             String                      // 徽章名称
+  icon             String                      // 图标名称 (Lucide)
+  description      String?                     // 徽章描述
+  category         String                      // rank/achievement/behavior
+  rarity           String                      // legendary/rare/epic/common
+  unlockCondition String                      // JSON: 解锁条件
+  createdAt        DateTime @default(now())
+
+  // 关联
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+// 用户徽章表
+model UserBadge {
+  id         String   @id @default(uuid())
+  userId     String                      // 用户ID
+  badgeId    String                      // 徽章ID
+  sessionId  String?                     // 关联活动ID (behavior类需要)
+  unlockedAt DateTime @default(now())
+
+  // 关联
+  user   User   @relation(fields: [userId], references: [id])
+  badge  Badge  @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+// ==================== 管理员相关 ====================
+
+// 管理员操作日志表
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String                      // 管理员ID
+  action     String                      // 操作类型
+  targetType String?                     // 目标类型 (user/session等)
+  targetId   String?                     // 目标ID
+  details    String?                     // JSON: 操作详情
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  // 关联
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@map("admin_audit_log")
+}

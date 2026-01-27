@@ -1,0 +1,59 @@
+/* 磁带未来主义组件样式 */
+
+/* 基础按钮样式 */
+.btn {
+  @apply px-4 py-2 font-bold uppercase tracking-wider transition-all duration-150;
+  @apply border-2 shadow-hard active:shadow-hard-sm active:translate-x-[2px] active:translate-y-[2px];
+}
+
+.btn-primary {
+  @apply btn bg-mustard-500 border-mustard-700 text-warm-900;
+  @apply hover:bg-mustard-400 hover:border-mustard-600;
+}
+
+.btn-secondary {
+  @apply btn bg-cream-200 border-warm-600 text-warm-800;
+  @apply hover:bg-cream-300 hover:border-warm-700;
+}
+
+.btn-accent {
+  @apply btn bg-burnt-500 border-burnt-700 text-white;
+  @apply hover:bg-burnt-400 hover:border-burnt-600;
+}
+
+/* 卡片样式 */
+.card {
+  @apply bg-cream-50 border-2 border-warm-400 shadow-hard;
+}
+
+/* 输入框样式 */
+.input {
+  @apply px-4 py-2 bg-cream-50 border-2 border-warm-400 text-warm-900;
+  @apply focus:border-mustard-500 focus:outline-none shadow-hard-sm;
+  @apply placeholder:text-warm-500;
+}
+
+/* 标签样式 */
+.badge {
+  @apply inline-flex items-center px-2 py-1 text-xs font-bold uppercase;
+  @apply border-2 shadow-hard-sm;
+}
+
+.badge-primary {
+  @apply badge bg-mustard-100 border-mustard-500 text-mustard-800;
+}
+
+.badge-accent {
+  @apply badge bg-burnt-100 border-burnt-500 text-burnt-800;
+}
+
+/* 标题样式 */
+.title-display {
+  @apply font-display font-bold text-4xl uppercase tracking-tight;
+  @apply text-warm-900;
+}
+
+.title-section {
+  @apply font-display font-semibold text-xl uppercase tracking-wide;
+  @apply text-warm-800 border-b-2 border-warm-400 pb-2 mb-4;
+}

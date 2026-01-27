@@ -1,0 +1,81 @@
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
+
+// 加载环境变量
+dotenv.config();
+
+const prisma = new PrismaClient();
+const app = express();
+const httpServer = createServer(app);
+
+// Socket.io 配置
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  },
+});
+
+// 中间件
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 健康检查
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'GamePact Backend is running' });
+});
+
+// API 路由
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/sessions', require('./routes/sessions'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/badges', require('./routes/badges'));
+
+// Socket.io 连接处理
+io.on('connection', (socket) => {
+  console.log(`用户连接: ${socket.id}`);
+
+  socket.on('disconnect', () => {
+    console.log(`用户断开: ${socket.id}`);
+  });
+});
+
+// 使 io 实例全局可用（用于在其他模块中发送通知）
+(app as any).io = io;
+
+// 错误处理中间件
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('服务器错误:', err);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || '服务器内部错误',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    },
+  });
+});
+
+// 启动服务器
+const PORT = process.env.PORT || 3001;
+httpServer.listen(PORT, () => {
+  console.log(`🚀 GamePact 后端服务运行在 http://localhost:${PORT}`);
+  console.log(`📡 WebSocket 服务已启动`);
+});
+
+// 优雅关闭
+process.on('SIGTERM', async () => {
+  console.log('收到 SIGTERM 信号，正在关闭服务器...');
+  await prisma.$disconnect();
+  httpServer.close();
+  process.exit(0);
+});
+
+export { prisma, io };
