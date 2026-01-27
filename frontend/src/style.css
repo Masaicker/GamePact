@@ -136,8 +136,9 @@ body::after {
   }
 
   .nav-inner {
-    @apply max-w-7xl mx-auto px-4 md:px-6 py-4;
+    @apply px-4 md:px-6 py-4;
     @apply flex items-center justify-between;
+    width: 100%;
   }
 
   .nav-logo {

@@ -113,7 +113,7 @@ onMounted(async () => {
         </div>
 
         <!-- 导航链接 -->
-        <div class="nav-links">
+        <div class="nav-links flex-1 flex justify-center">
           <router-link
             v-if="userStore.isAuthenticated"
             to="/dashboard"
@@ -176,7 +176,8 @@ onMounted(async () => {
     <!-- 页脚 -->
     <footer class="py-6 text-center border-t border-[#2d2a26] mt-auto">
       <p class="font-mono-retro text-xs text-[#5c5550]">
-        由 <a href="https://github.com/Masaicker" target="_blank" rel="noopener noreferrer" class="text-[#8b7355] hover:text-[#c4941f] transition-colors font-bold no-underline">@Masaicker</a> 开发
+        由 <a href="https://github.com/Masaicker" target="_blank" rel="noopener noreferrer" class="text-[#8b7355] hover:text-[#c4941f] transition-colors font-bold no-underline">@Masaicker</a> 开发，
+        <a href="https://space.bilibili.com/1704421" target="_blank" rel="noopener noreferrer" class="text-[#8b7355] hover:text-[#c4941f] transition-colors font-bold no-underline">@尤里的猫-卡里普索</a> 提供服务器和美术指导
       </p>
     </footer>
   </div>

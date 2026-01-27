@@ -334,13 +334,18 @@ const handleDelete = async () => {
       type: 'warning',
     });
 
+    // 先移除事件监听器，防止后续通知触发刷新
+    window.removeEventListener('gamepact:refresh', handleRefresh);
+
     await sessionsApi.delete(route.params.id as string);
     ElMessage.success('活动已删除');
-    // 直接跳转，不触发刷新（后端 Socket.IO 已广播通知）
+    // 跳转到 dashboard
     router.push('/dashboard');
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.response?.data?.error || '删除活动失败');
+      // 如果删除失败，恢复监听器
+      window.addEventListener('gamepact:refresh', handleRefresh);
     }
   }
 };
