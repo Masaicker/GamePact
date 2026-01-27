@@ -586,10 +586,52 @@ const generateInvites = async () => {
 
 // 复制邀请码
 const copyInviteCode = async (code: string) => {
+  // 优先使用现代 Clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(code);
+      ElMessage.success('邀请码已复制到剪贴板');
+      return;
+    } catch (error) {
+      console.warn('Clipboard API failed, falling back to execCommand:', error);
+    }
+  }
+
+  // 降级方案：使用传统的 execCommand 方法
   try {
-    await navigator.clipboard.writeText(code);
-    ElMessage.success('邀请码已复制到剪贴板');
+    const textArea = document.createElement('textarea');
+    textArea.value = code;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '0';
+    textArea.setAttribute('readonly', '');
+    document.body.appendChild(textArea);
+
+    // 选中文本
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+      // iOS 设备需要特殊处理
+      const range = document.createRange();
+      range.selectNodeContents(textArea);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      textArea.setSelectionRange(0, code.length);
+    } else {
+      textArea.select();
+      textArea.setSelectionRange(0, code.length);
+    }
+
+    // 执行复制命令
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    if (successful) {
+      ElMessage.success('邀请码已复制到剪贴板');
+    } else {
+      throw new Error('execCommand failed');
+    }
   } catch (error) {
+    console.error('All copy methods failed:', error);
     ElMessage.error('复制失败，请手动复制');
   }
 };
