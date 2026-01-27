@@ -279,7 +279,7 @@ router.post('/', async (req: Request, res: Response) => {
     });
 
     // 发起活动 +2 分
-    const gameNames = gameOptions.join('、');
+    const gameNames = gameOptions.map((opt: any) => getGameName(opt)).join('、');
     await prisma.scoreHistory.create({
       data: {
         userId,
