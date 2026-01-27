@@ -15,11 +15,24 @@ Write-Host "[1/2] Setting up Backend..." -ForegroundColor Yellow
 if (Test-Path $backendDir) {
     Set-Location $backendDir
 
-    # 1. Copy .env
+    # 1. Configure .env with Secure Secret
     if (-not (Test-Path ".env")) {
         if (Test-Path ".env.example") {
-            Copy-Item ".env.example" ".env"
-            Write-Host "  Created backend .env from example." -ForegroundColor Gray
+            Write-Host "  Generating secure configuration..." -ForegroundColor Gray
+            
+            # 读取模板
+            $envContent = Get-Content ".env.example" -Raw
+            
+            # 生成 64 字符随机密钥
+            $randomSecret = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 64 | % {[char]$_})
+            
+            # 替换密钥
+            $newEnvContent = $envContent -replace "JWT_SECRET=.*", "JWT_SECRET=$randomSecret"
+            
+            # 写入 .env
+            Set-Content ".env" $newEnvContent -Encoding UTF8
+            
+            Write-Host "  Created backend .env with a unique random JWT_SECRET." -ForegroundColor Green
         } else {
             Write-Host "  Warning: .env.example not found!" -ForegroundColor Red
         }
