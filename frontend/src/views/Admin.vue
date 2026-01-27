@@ -186,6 +186,9 @@
             <button @click="loadUsers" class="btn btn-ghost" title="刷新列表">
               <Icon icon="mdi:refresh" class="h-5 w-5" />
             </button>
+            <button @click="simulateNotification" class="btn btn-ghost" title="模拟通知">
+              <Icon icon="mdi:bell-ring" class="h-5 w-5" />
+            </button>
           </div>
         </div>
 
@@ -678,6 +681,33 @@ const loadUsers = async () => {
   } finally {
     loadingUsers.value = false;
   }
+};
+
+// 模拟通知测试
+const mockNotifications = [
+  '张三 发起了新活动：英雄联盟',
+  '李四 投票了：英雄联盟',
+  '王五 请假了',
+  '赵六 完成了活动结算：王者荣耀',
+  '孙七 流局了活动：原神',
+  '周八 发起了新活动：绝地求生',
+  '吴九 投票了：绝地求生',
+  '郑十 请假了',
+  '钱十一 删除了活动：英雄联盟',
+];
+
+const simulateNotification = () => {
+  const randomMessage = mockNotifications[Math.floor(Math.random() * mockNotifications.length)];
+
+  // 触发自定义事件，通知 App.vue 的通知栏
+  window.dispatchEvent(new CustomEvent('gamepact:notification', {
+    detail: {
+      message: randomMessage,
+      sessionId: 'mock',
+    },
+  }));
+
+  ElMessage.success(`已发送模拟通知: ${randomMessage}`);
 };
 
 // 打开积分调整对话框

@@ -13,6 +13,14 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
+ * 辅助函数：从游戏选项中提取游戏名称
+ * 兼容字符串数组 [{name: string, link?: string}] 和简单字符串数组
+ */
+function getGameName(option: string | { name: string }): string {
+  return typeof option === 'string' ? option : option.name;
+}
+
+/**
  * 计算投票结果（包括平票处理）
  * @param session - 活动对象（包含参与者）
  * @returns 最终游戏索引和游戏名称
@@ -63,7 +71,7 @@ function calculateVotingResult(session: any): { gameIndex: number; gameName: str
   if (winners.length === 1) {
     return {
       gameIndex: winners[0],
-      gameName: gameOptions[winners[0]],
+      gameName: getGameName(gameOptions[winners[0]]),
     };
   }
 
@@ -85,14 +93,14 @@ function calculateVotingResult(session: any): { gameIndex: number; gameName: str
   if (weightedWinner !== undefined) {
     return {
       gameIndex: weightedWinner,
-      gameName: gameOptions[weightedWinner],
+      gameName: getGameName(gameOptions[weightedWinner]),
     };
   }
 
   // 如果仍然平票（理论上不应该发生），返回第一个
   return {
     gameIndex: 0,
-    gameName: gameOptions[0],
+    gameName: getGameName(gameOptions[0]),
   };
 }
 
@@ -294,10 +302,10 @@ router.post('/', async (req: Request, res: Response) => {
     const notification = createNotificationData(
       NotificationType.SESSION_CREATED,
       session.id,
-      gameOptions[0],
+      getGameName(gameOptions[0]),
       userId,
       session.initiator.displayName,
-      `${session.initiator.displayName} 发起了新活动：${gameOptions[0]}`
+      `${session.initiator.displayName} 发起了新活动：${getGameName(gameOptions[0])}`
     );
     broadcastNotification(io, notification);
 
@@ -433,6 +441,9 @@ router.delete('/:id', async (req: Request, res: Response) => {
     // 检查活动是否存在
     const session = await prisma.session.findUnique({
       where: { id },
+      include: {
+        initiator: true,
+      },
     });
 
     if (!session) {
@@ -458,6 +469,24 @@ router.delete('/:id', async (req: Request, res: Response) => {
     await prisma.session.delete({
       where: { id },
     });
+
+    // 获取当前操作用户信息（用于通知）
+    const actor = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true },
+    });
+
+    // 发送通知
+    const gameOptions = JSON.parse(session.gameOptions);
+    const notification = createNotificationData(
+      NotificationType.SESSION_DELETED,
+      id,
+      getGameName(gameOptions[0]),
+      userId,
+      actor?.displayName || '未知用户',
+      `${actor?.displayName || '未知用户'} 删除了活动：${getGameName(gameOptions[0])}`
+    );
+    broadcastNotification(io, notification);
 
     res.json({ message: '活动已删除' });
   } catch (error) {
@@ -555,14 +584,14 @@ router.post('/:id/vote', async (req: Request, res: Response) => {
 
     // 发送通知
     if (user) {
-      const selectedGame = gameOptions[gameIndex];
+      const selectedGameName = getGameName(gameOptions[gameIndex]);
       const notification = createNotificationData(
         NotificationType.SESSION_VOTED,
         session.id,
-        selectedGame,
+        selectedGameName,
         userId,
         user.displayName,
-        `${user.displayName} 投票了：${selectedGame}`
+        `${user.displayName} 投票了：${selectedGameName}`
       );
       broadcastNotification(io, notification);
     }
@@ -705,7 +734,7 @@ router.post('/:id/excuse', async (req: Request, res: Response) => {
       const notification = createNotificationData(
         NotificationType.SESSION_EXCUSED,
         session.id,
-        gameOptions[0],
+        getGameName(gameOptions[0]),
         userId,
         user.displayName,
         `${user.displayName} 请假了`

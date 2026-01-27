@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { onMounted, watch, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { useUserStore } from './stores/user';
-import { ElNotification } from 'element-plus';
 import { connectSocket, disconnectSocket, onNotification, offNotification, joinUserRoom } from './utils/socket';
+import NotificationBar from './components/NotificationBar.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
 
+// 通知栏组件引用
+const notificationBarRef = ref<InstanceType<typeof NotificationBar> | null>(null);
+
 // 保存通知回调引用，用于正确移除监听器
 let notificationCallback: ((data: any) => void) | null = null;
+
+// 标记：防止重复设置监听器
+let hasSetupNotification = false;
 
 // 刷新事件 - 使用自定义事件
 const emitRefreshEvent = () => {
@@ -19,34 +25,32 @@ const emitRefreshEvent = () => {
 
 // 连接 Socket
 const connectToSocket = () => {
-  if (userStore.token && userStore.user) {
-    const socket = connectSocket(userStore.token);
-    joinUserRoom(userStore.user.id);
+  if (!userStore.token || !userStore.user) {
+    return;
+  }
 
-    // 先移除旧的监听器（如果有）
-    if (notificationCallback) {
-      offNotification(notificationCallback);
+  const socket = connectSocket(userStore.token);
+  joinUserRoom(userStore.user.id);
+
+  // 防止重复设置监听器
+  if (hasSetupNotification) {
+    return;
+  }
+
+  // 创建通知监听器
+  notificationCallback = (data) => {
+    // 调用通知栏组件显示通知
+    if (notificationBarRef.value) {
+      notificationBarRef.value.showNotification(data);
     }
 
-    // 创建新的监听器
-    notificationCallback = (data) => {
-      ElNotification({
-        title: '新活动通知',
-        message: data.message,
-        type: 'info',
-        duration: 5000,
-        onClick: () => {
-          router.push(`/sessions/${data.sessionId}`);
-        },
-      });
+    // 触发刷新事件
+    emitRefreshEvent();
+  };
 
-      // 触发刷新事件
-      emitRefreshEvent();
-    };
-
-    // 添加新的监听器
-    onNotification(notificationCallback);
-  }
+  // 添加监听器
+  onNotification(notificationCallback);
+  hasSetupNotification = true;
 };
 
 const disconnectFromSocket = () => {
@@ -54,6 +58,7 @@ const disconnectFromSocket = () => {
     offNotification(notificationCallback);
     notificationCallback = null;
   }
+  hasSetupNotification = false;
   disconnectSocket();
 };
 
@@ -76,6 +81,13 @@ onMounted(async () => {
       userStore.logout();
     }
   }
+
+  // 监听模拟通知事件（用于测试）
+  window.addEventListener('gamepact:notification', ((event: CustomEvent) => {
+    if (notificationBarRef.value) {
+      notificationBarRef.value.showNotification(event.detail);
+    }
+  }) as EventListener);
 });
 </script>
 
@@ -85,15 +97,19 @@ onMounted(async () => {
     <nav class="nav-container">
       <div class="nav-inner">
         <!-- Logo -->
-        <div class="flex items-center">
-          <router-link to="/" class="flex items-center space-x-3 group">
-            <div class="relative">
-              <Icon icon="mdi:game-controller-variant" class="h-8 w-8 text-[#c4941f] transition-colors group-hover:text-[#d4a017]" />
-              <div class="absolute -bottom-1 left-0 right-0 h-[2px] bg-[#c4941f] scale-x-0 group-hover:scale-x-100 transition-transform duration-150"></div>
-            </div>
-            <span class="nav-logo">GamePact</span>
-          </router-link>
-          <span class="nav-tagline">「不鸽，才是真爱」</span>
+        <div class="flex flex-col">
+          <div class="flex items-center">
+            <router-link to="/" class="flex items-center space-x-3 group">
+              <div class="relative">
+                <Icon icon="mdi:game-controller-variant" class="h-8 w-8 text-[#c4941f] transition-colors group-hover:text-[#d4a017]" />
+                <div class="absolute -bottom-1 left-0 right-0 h-[2px] bg-[#c4941f] scale-x-0 group-hover:scale-x-100 transition-transform duration-150"></div>
+              </div>
+              <span class="nav-logo">GamePact</span>
+            </router-link>
+            <span class="nav-tagline">「不鸽，才是真爱」</span>
+          </div>
+          <!-- 通知栏 -->
+          <NotificationBar ref="notificationBarRef" />
         </div>
 
         <!-- 导航链接 -->
@@ -153,7 +169,7 @@ onMounted(async () => {
     </nav>
 
     <!-- 主内容 -->
-    <main class="relative flex-grow">
+    <main class="relative flex-grow" style="padding-top: 120px;">
       <router-view />
     </main>
 
@@ -167,29 +183,4 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* 覆盖 Element Plus 通知样式 */
-:deep(.el-notification) {
-  background-color: #242220 !important;
-  border: 2px solid #6b5a45 !important;
-  box-shadow: 3px 3px 0 0 rgba(107, 90, 69, 0.5) !important;
-}
-
-:deep(.el-notification__title) {
-  color: #f5f0e6 !important;
-  font-family: 'Space Grotesk', sans-serif !important;
-  font-weight: 700 !important;
-}
-
-:deep(.el-notification__content) {
-  color: #c4b8a8 !important;
-  font-family: 'Courier Prime', monospace !important;
-}
-
-:deep(.el-notification__closeBtn) {
-  color: #8b8178 !important;
-}
-
-:deep(.el-notification__closeBtn:hover) {
-  color: #c4941f !important;
-}
 </style>

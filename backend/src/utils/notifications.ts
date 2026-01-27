@@ -7,6 +7,7 @@ export enum NotificationType {
   SESSION_EXCUSED = 'session_excused',
   SESSION_STATUS_CHANGED = 'session_status_changed',
   SESSION_SETTLED = 'session_settled',
+  SESSION_DELETED = 'session_deleted',
 }
 
 // 通知数据接口

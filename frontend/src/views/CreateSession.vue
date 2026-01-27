@@ -12,7 +12,13 @@ const userStore = useUserStore();
 // 检查是否是管理员
 const isAdmin = computed(() => userStore.user?.isAdmin || false);
 
-const gameOptions = ref<string[]>(['']);
+interface GameOption {
+  name: string;
+  link?: string;
+  showLinkInput?: boolean;
+}
+
+const gameOptions = ref<GameOption[]>([{ name: '', link: '', showLinkInput: false }]);
 const startTime = ref('');
 const endVotingTime = ref('');
 const minPlayers = ref(2);
@@ -20,7 +26,7 @@ const loading = ref(false);
 
 // 添加游戏选项
 const addGameOption = () => {
-  gameOptions.value.push('');
+  gameOptions.value.push({ name: '', link: '', showLinkInput: false });
 };
 
 // 删除游戏选项
@@ -30,10 +36,17 @@ const removeGameOption = (index: number) => {
   }
 };
 
+// 切换链接输入显示
+const toggleLinkInput = (index: number) => {
+  gameOptions.value[index].showLinkInput = !gameOptions.value[index].showLinkInput;
+};
+
 // 提交创建
 const handleSubmit = async () => {
-  // 过滤空选项
-  const validOptions = gameOptions.value.filter(opt => opt.trim());
+  // 过滤空选项（只保留有名字的）
+  const validOptions = gameOptions.value
+    .filter(opt => opt.name?.trim())
+    .map(({ name, link }) => ({ name: name.trim(), link: link?.trim() || undefined }));
 
   if (validOptions.length < 1) {
     ElMessage.warning('请至少填写一个游戏选项');
@@ -116,23 +129,49 @@ onMounted(() => {
               <span class="text-[#6b5a45]">（至少一个）</span>
             </label>
             <div class="space-y-3">
-              <div v-for="(option, index) in gameOptions" :key="index" class="flex items-center space-x-3">
-                <div class="flex-1">
+              <div v-for="(option, index) in gameOptions" :key="index" class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4">
+                <!-- 游戏名称行 -->
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="flex-1">
+                    <input
+                      v-model="option.name"
+                      type="text"
+                      placeholder="> 输入游戏名称"
+                      class="input-field"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    @click="toggleLinkInput(index)"
+                    class="btn btn-ghost"
+                    title="添加链接"
+                  >
+                    <Icon :icon="option.showLinkInput ? 'mdi:chevron-up' : 'mdi:link'" class="h-5 w-5 mr-1" />
+                    {{ option.showLinkInput ? '收起' : '添加链接' }}
+                  </button>
+                  <button
+                    v-if="gameOptions.length > 1"
+                    type="button"
+                    @click="removeGameOption(index)"
+                    class="btn btn-danger"
+                    title="删除"
+                  >
+                    <Icon icon="mdi:close" class="h-5 w-5" />
+                  </button>
+                </div>
+
+                <!-- 可展开的链接输入 -->
+                <div v-if="option.showLinkInput" class="pl-4 border-l-2 border-[#6b5a45]">
+                  <label class="mb-2 block font-mono-retro text-xs text-[#8b8178]">
+                    游戏介绍链接（可选）
+                  </label>
                   <input
-                    v-model="gameOptions[index]"
-                    type="text"
-                    :placeholder="`> 游戏 ${index + 1}`"
+                    v-model="option.link"
+                    type="url"
+                    placeholder="> https://example.com （Steam、游戏官网等）"
                     class="input-field"
                   />
                 </div>
-                <button
-                  v-if="gameOptions.length > 1"
-                  type="button"
-                  @click="removeGameOption(index)"
-                  class="btn btn-danger"
-                >
-                  <Icon icon="mdi:close" class="h-5 w-5" />
-                </button>
               </div>
             </div>
             <button

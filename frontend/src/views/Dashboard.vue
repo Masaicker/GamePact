@@ -39,6 +39,19 @@ const goToHistoryPage = (page: number) => {
 const prevHistoryPage = () => goToHistoryPage(historyCurrentPage.value - 1);
 const nextHistoryPage = () => goToHistoryPage(historyCurrentPage.value + 1);
 
+// 解析游戏选项（获取第一个游戏的名称和链接）
+const parseFirstGameOption = (session: any) => {
+  if (!session.gameOptions || session.gameOptions.length === 0) {
+    return { name: '未定游戏', link: null };
+  }
+
+  const firstOption = session.gameOptions[0];
+  if (typeof firstOption === 'string') {
+    return { name: firstOption, link: null };
+  }
+  return { name: firstOption.name, link: firstOption.link || null };
+};
+
 // 从 sessionStorage 读取标签状态，如果没有则默认为 'current'
 const savedTab = sessionStorage.getItem('dashboardTab');
 const activeTab = ref<'current' | 'history'>(savedTab === 'history' ? 'history' : 'current');
@@ -213,7 +226,8 @@ function getRankIconColor(rp: number): string {
 
 // 格式化历史记录为一句话（带颜色）
 const formatHistoryRecord = (session: any): string => {
-  const game = session.finalGame || session.gameOptions?.[0] || '未知游戏';
+  const gameOption = session.finalGame || session.gameOptions?.[0] || '未知游戏';
+  const game = typeof gameOption === 'object' ? gameOption.name : gameOption;
   const time = formatTime(session.updatedAt || session.createdAt);
   const initiator = session.initiator?.displayName || '未知';
 
@@ -448,7 +462,20 @@ onUnmounted(() => {
 
                   <!-- 游戏名称 -->
                   <h3 class="mb-3 title-subsection group-hover:text-[#c4941f] transition-colors">
-                    {{ session.gameOptions?.[0] || '未定游戏' }}
+                    <template v-if="parseFirstGameOption(session).link">
+                      <a
+                        :href="parseFirstGameOption(session).link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                      >
+                        {{ parseFirstGameOption(session).name }}
+                        <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                      </a>
+                    </template>
+                    <template v-else>
+                      {{ parseFirstGameOption(session).name }}
+                    </template>
                     <span v-if="session.gameOptions?.length > 1" class="ml-2 text-base text-[#8b8178]">
                       +{{ session.gameOptions.length - 1 }}
                     </span>

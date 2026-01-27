@@ -84,6 +84,30 @@ const canVote = computed(() => {
   return session.value && session.value.status === 'voting' && !currentUserParticipant.value?.isExcused && !hasVoted.value;
 });
 
+// 解析游戏选项（兼容字符串数组和对象数组）
+const parsedGameOptions = computed(() => {
+  if (!session.value?.gameOptions) return [];
+
+  return session.value.gameOptions.map((opt: string | { name: string, link?: string }) => {
+    if (typeof opt === 'string') {
+      return { name: opt, link: undefined };
+    }
+    return opt;
+  });
+});
+
+// 安全地获取 finalGame 名称（兼容对象和字符串格式）
+const finalGameName = computed(() => {
+  if (!session.value?.finalGame) return null;
+  if (typeof session.value.finalGame === 'string') {
+    return session.value.finalGame;
+  }
+  if (typeof session.value.finalGame === 'object' && session.value.finalGame?.name) {
+    return session.value.finalGame.name;
+  }
+  return null;
+});
+
 // 显示投票结果（投票中或已投票都可以看结果）
 const showVoteResults = computed(() => {
   return session.value && session.value.status === 'voting' && !currentUserParticipant.value?.isExcused;
@@ -117,9 +141,9 @@ const canSettle = computed(() => {
 const voteResults = computed(() => {
   if (!session.value?.gameOptions) return [];
 
-  const results = session.value.gameOptions.map((_: any, index: number) => ({
+  const results = parsedGameOptions.value.map((opt: any, index: number) => ({
     gameIndex: index,
-    gameName: session.value.gameOptions[index],
+    gameName: opt.name,
     voteCount: 0,
     voters: [] as Array<{ id: string; displayName: string }>,
   }));
@@ -312,8 +336,7 @@ const handleDelete = async () => {
 
     await sessionsApi.delete(route.params.id as string);
     ElMessage.success('活动已删除');
-    // 触发全局刷新事件，通知其他用户
-    window.dispatchEvent(new CustomEvent('gamepact:refresh'));
+    // 直接跳转，不触发刷新（后端 Socket.IO 已广播通知）
     router.push('/dashboard');
   } catch (error: any) {
     if (error !== 'cancel') {
@@ -365,7 +388,7 @@ onUnmounted(() => {
           <div class="flex-1">
             <div class="flex items-center gap-3 mb-3">
               <h1 class="title-display text-[#f5f0e6]">
-                {{ session.finalGame || session.gameOptions?.[0] || '未定游戏' }}
+                {{ finalGameName || parsedGameOptions[0]?.name || '未定游戏' }}
               </h1>
               <span class="badge" :class="getStatusBadgeClass(session.status)">
                 <Icon :icon="getStatusIcon(session.status)" class="mr-1.5 h-3.5 w-3.5" />
@@ -413,7 +436,7 @@ onUnmounted(() => {
             <Icon icon="mdi:game-controller-variant" class="h-6 w-6 text-[#c4941f]" />
             <div>
               <div class="text-xs text-[#8b8178]">游戏选项</div>
-              <div class="font-mono-retro text-[#f5f0e6]">{{ session.gameOptions?.length || 0 }} 个</div>
+              <div class="font-mono-retro text-[#f5f0e6]">{{ parsedGameOptions.length || 0 }} 个</div>
             </div>
           </div>
         </div>
@@ -476,8 +499,8 @@ onUnmounted(() => {
             <!-- 游戏选项卡片网格 -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div
-                v-for="(game, index) in session.gameOptions"
-                :key="game"
+                v-for="(game, index) in parsedGameOptions"
+                :key="game.name || index"
                 @click="selectedGameIndex = index"
                 class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4 cursor-pointer hover:border-[#c4941f] transition-all"
                 :class="{ 'border-[#c4941f] bg-[#c4941f]/10': selectedGameIndex === index }"
@@ -489,7 +512,18 @@ onUnmounted(() => {
                       #{{ index + 1 }}
                     </span>
                   </div>
-                  <h4 class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game }}</h4>
+                  <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
+                    <a
+                      :href="parsedGameOptions[index].link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                    >
+                      {{ game.name }}
+                      <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                    </a>
+                  </h4>
+                  <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
                 </div>
 
                 <!-- 纵向进度条容器 -->
@@ -594,14 +628,26 @@ onUnmounted(() => {
           <div v-else-if="hasVoted">
             <div class="mb-6 border-2 border-[#6b9b7a] bg-[#6b9b7a]/10 p-4 text-center">
               <Icon icon="mdi:check-circle" class="mr-2 h-5 w-5 text-[#6b9b7a]" />
-              <span class="font-mono-retro text-[#6b9b7a]">您已投票：{{ session.gameOptions?.[getUserVote] }}</span>
+              <span class="font-mono-retro text-[#6b9b7a]">您已投票：
+                <a
+                  v-if="parsedGameOptions[getUserVote]?.link"
+                  :href="parsedGameOptions[getUserVote].link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[#6b9b7a] underline underline-offset-2 decoration-2 mx-1"
+                >
+                  {{ parsedGameOptions[getUserVote].name }}
+                  <Icon icon="mdi:open-in-new" class="h-3 w-3 inline" />
+                </a>
+                <span v-else>{{ parsedGameOptions[getUserVote]?.name }}</span>
+              </span>
             </div>
 
             <!-- 投票结果卡片网格（只读） -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div
-                v-for="(game, index) in session.gameOptions"
-                :key="game"
+                v-for="(game, index) in parsedGameOptions"
+                :key="game.name || index"
                 class="border-2 bg-[#1a1814] rounded p-4"
                 :class="getUserVote === index ? 'border-[#c4941f]' : 'border-[#6b5a45]'"
               >
@@ -613,7 +659,18 @@ onUnmounted(() => {
                       <Icon v-if="getUserVote === index" icon="mdi:check" class="ml-1 h-3 w-3 inline" />
                     </span>
                   </div>
-                  <h4 class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game }}</h4>
+                  <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
+                    <a
+                      :href="parsedGameOptions[index].link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                    >
+                      {{ game.name }}
+                      <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                    </a>
+                  </h4>
+                  <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
                 </div>
 
                 <!-- 纵向进度条容器 -->
@@ -695,7 +752,7 @@ onUnmounted(() => {
         </div>
 
         <!-- 最终确定的游戏（活动结束后显示） -->
-        <div v-if="session.finalGame && session.status !== 'voting'" class="mt-6 p-6 border-2" :class="session.status === 'settled' ? 'border-[#c4941f] bg-[#c4941f]/10' : 'border-[#a34d1d] bg-[#a34d1d]/10'">
+        <div v-if="finalGameName && session.status !== 'voting'" class="mt-6 p-6 border-2" :class="session.status === 'settled' ? 'border-[#c4941f] bg-[#c4941f]/10' : 'border-[#a34d1d] bg-[#a34d1d]/10'">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <Icon :icon="session.status === 'settled' ? 'mdi:trophy' : 'mdi:alert-circle'" class="h-10 w-10" :class="session.status === 'settled' ? 'text-[#c4941f]' : 'text-[#a34d1d]'" />
@@ -707,7 +764,18 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="text-right">
-              <div class="title-display text-[#f5f0e6]">{{ session.finalGame }}</div>
+              <div v-if="finalGameName && parsedGameOptions.find(o => o.name === finalGameName)?.link" class="title-display">
+                <a
+                  :href="parsedGameOptions.find(o => o.name === finalGameName)!.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                >
+                  {{ finalGameName }}
+                  <Icon icon="mdi:open-in-new" class="h-4 w-4 inline ml-1" />
+                </a>
+              </div>
+              <div v-else class="title-display text-[#f5f0e6]">{{ finalGameName }}</div>
               <div class="font-mono-retro text-xs uppercase" :class="session.status === 'settled' ? 'text-[#6b9b7a]' : 'text-[#a34d1d]'">
                 {{ session.status === 'settled' ? '成功' : '流局' }}
               </div>
@@ -718,7 +786,7 @@ onUnmounted(() => {
       </div>
 
       <!-- 最终投票结果（仅在非投票状态显示） -->
-      <div v-if="session.status !== 'voting' && (voteResults.length > 0 || session.finalGame)" class="card p-6">
+      <div v-if="session.status !== 'voting' && (voteResults.length > 0 || finalGameName)" class="card p-6">
         <h2 class="title-section flex items-center">
           <Icon icon="mdi:chart-bar" class="mr-3 h-6 w-6 text-[#c4941f]" />
           最终投票结果
@@ -740,7 +808,18 @@ onUnmounted(() => {
                   #{{ index + 1 }}
                 </span>
               </div>
-              <h4 class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ result.gameName }}</h4>
+              <h4 v-if="parsedGameOptions[result.gameIndex]?.link" class="font-bold text-sm leading-tight">
+                <a
+                  :href="parsedGameOptions[result.gameIndex].link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                >
+                  {{ result.gameName }}
+                  <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                </a>
+              </h4>
+              <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ result.gameName }}</h4>
             </div>
 
             <!-- 纵向进度条容器 -->
