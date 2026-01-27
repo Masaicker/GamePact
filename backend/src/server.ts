@@ -63,11 +63,32 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+// 获取本机局域网 IP
+import { networkInterfaces } from 'os';
+
+function getLocalIP() {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]!) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
 // 启动服务器
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 GamePact 后端服务运行在 http://localhost:${PORT}`);
-  console.log(`📡 WebSocket 服务已启动`);
+  const localIP = getLocalIP();
+  console.log(`\n=================================================`);
+  console.log(`🚀 GamePact 后端服务已启动!`);
+  console.log(`-------------------------------------------------`);
+  console.log(`👉 本机访问: http://localhost:${PORT}`);
+  console.log(`👉 局域网/手机访问: http://${localIP}:${PORT}`);
+  console.log(`📡 WebSocket 服务已就绪`);
+  console.log(`=================================================\n`);
 });
 
 // 优雅关闭
