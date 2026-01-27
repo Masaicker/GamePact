@@ -278,25 +278,35 @@ router.post('/', async (req: Request, res: Response) => {
       },
     });
 
-    // 发起活动 +2 分
-    const gameNames = gameOptions.map((opt: any) => getGameName(opt)).join('、');
-    await prisma.scoreHistory.create({
-      data: {
-        userId,
+    // 发起活动 +2 分（边缘检测：同一活动只能给一次）
+    const existingInitScore = await prisma.scoreHistory.findFirst({
+      where: {
         sessionId: session.id,
-        scoreChange: 2,
+        userId,
         reason: 'initiated',
-        description: `发起活动：${gameNames}`,
       },
     });
 
-    // 更新用户积分
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        rp: { increment: 2 },
-      },
-    });
+    if (!existingInitScore) {
+      const gameNames = gameOptions.map((opt: any) => getGameName(opt)).join('、');
+      await prisma.scoreHistory.create({
+        data: {
+          userId,
+          sessionId: session.id,
+          scoreChange: 2,
+          reason: 'initiated',
+          description: `发起活动：${gameNames}`,
+        },
+      });
+
+      // 更新用户积分
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          rp: { increment: 2 },
+        },
+      });
+    }
 
     // 发送通知
     const notification = createNotificationData(
@@ -453,6 +463,50 @@ router.delete('/:id', async (req: Request, res: Response) => {
     // 检查权限（发起人或管理员）
     if (session.initiatorId !== userId && !isAdmin) {
       return res.status(403).json({ error: '只有发起人或管理员可以删除活动' });
+    }
+
+    // 检查是否已经撤销过发起分了
+    const existingRevert = await prisma.scoreHistory.findFirst({
+      where: {
+        sessionId: id,
+        userId: session.initiatorId,
+        reason: 'initiated_revert',
+      },
+    });
+
+    // 如果有发起分记录，且还没撤销过，则撤销发起分
+    if (!existingRevert) {
+      const existingInitScore = await prisma.scoreHistory.findFirst({
+        where: {
+          sessionId: id,
+          userId: session.initiatorId,
+          reason: 'initiated',
+        },
+      });
+
+      if (existingInitScore) {
+        // 撤销发起活动 +2 分
+        const gameNames = JSON.parse(session.gameOptions);
+        const gameNameList = Array.isArray(gameNames) ? gameNames.map((g: any) => typeof g === 'string' ? g : g.name) : [gameNames];
+
+        await prisma.scoreHistory.create({
+          data: {
+            userId: session.initiatorId,
+            sessionId: id,
+            scoreChange: -2,
+            reason: 'initiated_revert',
+            description: `删除活动撤销发起分：${gameNameList.join('、')}`,
+          },
+        });
+
+        // 更新用户积分
+        await prisma.user.update({
+          where: { id: session.initiatorId },
+          data: {
+            rp: { increment: -2 },
+          },
+        });
+      }
     }
 
     // 删除参与记录
