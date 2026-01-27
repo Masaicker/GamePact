@@ -58,11 +58,25 @@
 
 ```text
 gamepact/
-├── backend/            # Express 后端服务 & Prisma 数据库
-├── frontend/           # Vue 3 前端界面
-├── start.ps1           # 一键启动脚本
-├── stop.ps1            # 一键停止脚本
-└── README.md           # 说明文档
+├── backend/                    # Express 后端服务
+│   ├── src/                   # 源代码
+│   │   ├── routes/           # API 路由
+│   │   ├── prisma/           # 数据库 Schema
+│   │   └── server.ts         # 服务入口
+│   ├── .env.example          # 后端配置模板
+│   └── package.json
+├── frontend/                   # Vue 3 前端界面
+│   ├── src/                  # 源代码
+│   │   ├── views/            # 页面组件
+│   │   ├── api/              # API 调用
+│   │   └── main.ts           # 入口文件
+│   ├── .env.example          # 前端配置模板
+│   ├── vite.config.ts        # Vite 配置
+│   └── package.json
+├── setup.ps1                   # 初始化脚本（首次使用）
+├── start.ps1                   # 一键启动脚本
+├── stop.ps1                    # 一键停止脚本
+└── README.md                   # 项目文档
 ```
 
 ## 数据与隐私说明
