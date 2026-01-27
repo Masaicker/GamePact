@@ -53,44 +53,44 @@ async function main() {
   // 等级徽章
   const rankBadges = [
     { code: 'legendary', name: '传说缔约者', icon: 'mdi:crown', rarity: 'legendary' },
-    { code: 'diamond', name: '钻石战神', icon: 'mdi:gem', rarity: 'legendary' },
+    { code: 'diamond', name: '钻石战神', icon: 'mdi:diamond', rarity: 'legendary' },
     { code: 'gold', name: '黄金大腿', icon: 'mdi:medal', rarity: 'rare' },
     { code: 'silver', name: '白银骑士', icon: 'mdi:shield', rarity: 'epic' },
-    { code: 'bronze', name: '青铜玩家', icon: 'mdi:award', rarity: 'common' },
+    { code: 'bronze', name: '青铜玩家', icon: 'mdi:trophy', rarity: 'common' },
     { code: 'pigeon', name: '扑棱鸽子', icon: 'mdi:bird', rarity: 'common' },
-    { code: 'old_pigeon', name: '老鸽子', icon: 'mdi:alert-triangle', rarity: 'common' },
+    { code: 'old_pigeon', name: '老鸽子', icon: 'mdi:alert', rarity: 'common' },
     { code: 'pigeon_king', name: '鸽王之王', icon: 'mdi:skull', rarity: 'rare' },
-    { code: 'missing', name: '失踪人口', icon: 'mdi:user-minus', rarity: 'rare' },
+    { code: 'missing', name: '失踪人口', icon: 'mdi:account-minus', rarity: 'rare' },
   ];
 
   // 成就徽章
   const achievementBadges = [
-    { code: 'iron_man', name: '铁人', icon: 'mdi:zap', rarity: 'legendary' },
-    { code: 'pigeon_killer', name: '鸽子杀手', icon: 'mdi:skull-cross', rarity: 'legendary' },
-    { code: 'race_king', name: '赛鸽之王', icon: 'mdi:bird-off', rarity: 'legendary' },
+    { code: 'iron_man', name: '铁人', icon: 'mdi:lightning-bolt', rarity: 'legendary' },
+    { code: 'pigeon_killer', name: '鸽子杀手', icon: 'mdi:skull-crossbones', rarity: 'legendary' },
+    { code: 'race_king', name: '赛鸽之王', icon: 'mdi:emoticon-dead', rarity: 'legendary' },
     { code: 'pro_player', name: '职业选手', icon: 'mdi:skull', rarity: 'rare' },
     { code: 'lost_self', name: '迷失自我', icon: 'mdi:ghost', rarity: 'rare' },
-    { code: 'firefighter', name: '救火队员', icon: 'mdi:flame', rarity: 'rare' },
-    { code: 'organizer', name: '约战之王', icon: 'mdi:users-three', rarity: 'rare' },
+    { code: 'firefighter', name: '救火队员', icon: 'mdi:fire', rarity: 'rare' },
+    { code: 'organizer', name: '约战之王', icon: 'mdi:account-group', rarity: 'rare' },
     { code: 'comeback', name: '归来王者', icon: 'mdi:trending-up', rarity: 'rare' },
     { code: 'loyal', name: '守信者', icon: 'mdi:shield-check', rarity: 'epic' },
-    { code: 'initiator', name: '组织者', icon: 'mdi:scroll-text', rarity: 'epic' },
-    { code: 'stable', name: '稳定性', icon: 'mdi:activity', rarity: 'epic' },
+    { code: 'initiator', name: '组织者', icon: 'mdi:file-document', rarity: 'epic' },
+    { code: 'stable', name: '稳定性', icon: 'mdi:pulse', rarity: 'epic' },
     { code: 'first_win', name: '首胜', icon: 'mdi:star', rarity: 'common' },
-    { code: 'first_host', name: '首约', icon: 'mdi:scroll', rarity: 'common' },
-    { code: 'regular', name: '常客', icon: 'mdi:user-check', rarity: 'common' },
+    { code: 'first_host', name: '首约', icon: 'mdi:certificate', rarity: 'common' },
+    { code: 'regular', name: '常客', icon: 'mdi:account-check', rarity: 'common' },
     { code: 'centurion', name: '百人斩', icon: 'mdi:target', rarity: 'legendary' },
-    { code: 'perfectionist', name: '完美主义者', icon: 'mdi:check-circle-2', rarity: 'rare' },
+    { code: 'perfectionist', name: '完美主义者', icon: 'mdi:check-circle-outline', rarity: 'rare' },
   ];
 
   // 行为徽章
   const behaviorBadges = [
     { code: 'attended', name: '践约', icon: 'mdi:check-circle', rarity: 'common' },
-    { code: 'no_show', name: '毁约', icon: 'mdi:x-circle', rarity: 'common' },
-    { code: 'initiated', name: '立约', icon: 'mdi:scroll-text', rarity: 'common' },
+    { code: 'no_show', name: '毁约', icon: 'mdi:close-circle', rarity: 'common' },
+    { code: 'initiated', name: '立约', icon: 'mdi:file-document', rarity: 'common' },
     { code: 'excused', name: '告假', icon: 'mdi:clock-alert', rarity: 'common' },
-    { code: 'late_excuse', name: '临时有事', icon: 'mdi:alert-triangle', rarity: 'common' },
-    { code: 'admin_adjust', name: '神之手', icon: 'mdi:hand', rarity: 'rare' },
+    { code: 'late_excuse', name: '临时有事', icon: 'mdi:alert', rarity: 'common' },
+    { code: 'admin_adjust', name: '神之手', icon: 'mdi:hand-right', rarity: 'rare' },
   ];
 
   const allBadges = [
