@@ -474,8 +474,9 @@ router.delete('/:id', async (req: Request, res: Response) => {
       },
     });
 
-    // 如果有发起分记录，且还没撤销过，则撤销发起分
-    if (!existingRevert) {
+    // 只在删除投票中的活动时，才撤销发起分
+    // 已结算/已流局的活动已经有结算分，不应该再撤销发起分（会导致重复扣分）
+    if (session.status === 'voting' && !existingRevert) {
       const existingInitScore = await prisma.scoreHistory.findFirst({
         where: {
           sessionId: id,
@@ -486,6 +487,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
       if (existingInitScore) {
         // 撤销发起活动 +2 分
+        // 注意：已结算活动时，发起人的结算分中已包含发起奖励，所以只撤销投票中的发起分
         const gameNames = JSON.parse(session.gameOptions);
         const gameNameList = Array.isArray(gameNames) ? gameNames.map((g: any) => typeof g === 'string' ? g : g.name) : [gameNames];
 
