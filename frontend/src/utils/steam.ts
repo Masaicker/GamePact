@@ -23,13 +23,14 @@ export function extractSteamAppId(url: string): string | null {
  */
 export function getSteamImageUrl(
   appid: string,
-  type: 'header' | 'portrait' | 'background' | 'hero' = 'header'
+  type: 'header' | 'portrait' | 'background' | 'hero' | 'page_bg' = 'header'
 ): string {
   const images = {
     header: `${STEAM_CDN}/${appid}/header.jpg`,
     portrait: `${STEAM_CDN}/${appid}/library_600x900.jpg`,
     background: `${STEAM_CDN}/${appid}/page_bg_raw.jpg`,
     hero: `${STEAM_CDN}/${appid}/library_hero.jpg`,
+    page_bg: `${STEAM_CDN}/${appid}/page_bg_generated_v6b.jpg`,
   };
   return images[type];
 }
@@ -61,6 +62,21 @@ export function getGamePortraitBackground(link?: string): Record<string, string>
     backgroundImage: `url(${imageUrl})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+  };
+}
+
+/**
+ * 获取游戏高清商店页背景图样式（用于卡片右侧背景）
+ */
+export function getGamePageBackground(link?: string): Record<string, string> {
+  const appid = extractSteamAppId(link || '');
+  if (!appid) return {};
+
+  const imageUrl = getSteamImageUrl(appid, 'page_bg');
+  return {
+    backgroundImage: `url(${imageUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'right center', // 因为是放右边，背景位置也微调一下
   };
 }
 

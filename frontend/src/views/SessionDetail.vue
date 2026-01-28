@@ -203,7 +203,16 @@ const voteResults = computed(() => {
     }
   });
 
-  return results.sort((a, b) => b.voteCount - a.voteCount);
+  return results.sort((a, b) => {
+    // 优先将最终确定的游戏排在前面
+    const finalName = finalGameName.value;
+    if (finalName) {
+      if (a.gameName === finalName) return -1;
+      if (b.gameName === finalName) return 1;
+    }
+    // 其次按票数降序
+    return b.voteCount - a.voteCount;
+  });
 });
 
 // 计算总票数
@@ -905,7 +914,10 @@ onUnmounted(() => {
               <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
                 <!-- Steam 竖版背景 -->
                 <div v-if="parsedGameOptions[result.gameIndex]?.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50"
-                     :style="{ ...getGamePortraitBackground(parsedGameOptions[result.gameIndex].link), opacity: index === 0 && result.voteCount > 0 ? 0.7 : 0.25 }"></div>
+                     :style="{ 
+                       ...getGamePortraitBackground(parsedGameOptions[result.gameIndex].link), 
+                       opacity: (finalGameName && result.gameName === finalGameName) || (!finalGameName && index === 0 && result.voteCount > 0) ? 0.7 : 0.25 
+                     }"></div>
 
                 <!-- 纵向进度条 -->
                 <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
