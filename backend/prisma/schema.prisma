@@ -158,6 +158,17 @@ model UserBadge {
 
 // ==================== 管理员相关 ====================
 
+// 预设游戏表
+model PresetGame {
+  id        String   @id @default(uuid())
+  name      String                      // 游戏名称
+  link      String?                     // 游戏链接（可选）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("preset_games")
+}
+
 // 管理员操作日志表
 model AdminAuditLog {
   id         String   @id @default(uuid())

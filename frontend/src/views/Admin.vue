@@ -52,6 +52,18 @@
         <Icon icon="mdi:database-export" class="mr-2 h-5 w-5" />
         数据备份
       </button>
+      <button
+        @click="activeTab = 'games'"
+        :class="[
+          'px-4 py-2 font-mono-retro text-sm font-medium transition-colors',
+          activeTab === 'games'
+            ? 'border-b-2 border-[#c4941f] text-[#c4941f]'
+            : 'text-[#8b8178] hover:text-[#f5f0e6]'
+        ]"
+      >
+        <Icon icon="mdi:gamepad-variant" class="mr-2 h-5 w-5" />
+        游戏库
+      </button>
     </div>
 
     <!-- 邀请码管理 -->
@@ -324,6 +336,173 @@
       </div>
     </div>
 
+    <!-- 游戏库管理 -->
+    <div v-if="activeTab === 'games'">
+      <div class="card mb-6 p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="title-subsection text-[#f5f0e6]">添加预设游戏</h2>
+        </div>
+        <div class="mb-4">
+          <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏名称</label>
+          <input
+            v-model="newGameName"
+            type="text"
+            class="input-field"
+            placeholder="> 输入游戏名称"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏链接（可选）</label>
+          <input
+            v-model="newGameLink"
+            type="url"
+            class="input-field"
+            placeholder="> https://store.steampowered.com/app/..."
+          />
+        </div>
+        <button
+          @click="createPresetGame"
+          :disabled="creatingGame || !newGameName.trim()"
+          class="btn btn-primary"
+        >
+          <Icon v-if="creatingGame" icon="mdi:loading" class="mr-2 h-5 w-5 animate-spin" />
+          <Icon v-else icon="mdi:plus" class="mr-2 h-5 w-5" />
+          添加游戏
+        </button>
+      </div>
+
+      <div class="card p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="title-subsection text-[#f5f0e6]">预设游戏列表</h2>
+          <div class="flex items-center space-x-2">
+            <input
+              v-model="gameSearchQuery"
+              type="text"
+              class="input-field w-48"
+              placeholder="> 搜索游戏"
+            />
+            <button
+              @click="exportPresetGames"
+              class="btn btn-ghost"
+              title="导出游戏库"
+            >
+              <Icon icon="mdi:download" class="h-5 w-5" />
+            </button>
+            <button
+              @click="triggerImportGames"
+              class="btn btn-ghost"
+              title="导入游戏库"
+            >
+              <Icon icon="mdi:upload" class="h-5 w-5" />
+            </button>
+            <input
+              ref="importFileInput"
+              type="file"
+              accept=".json"
+              class="hidden"
+              @change="importPresetGames"
+            />
+            <button @click="loadPresetGames" class="btn btn-ghost" title="刷新列表">
+              <Icon icon="mdi:refresh" class="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div v-if="loadingGames" class="py-8 text-center font-mono-retro text-[#8b8178]">
+          > 加载中...
+        </div>
+
+        <div v-else-if="filteredGames.length === 0" class="py-8 text-center font-mono-retro text-[#6b5a45]">
+          > {{ gameSearchQuery ? '未找到匹配的游戏' : '暂无预设游戏' }}
+        </div>
+
+        <div v-else class="space-y-3">
+          <div
+            v-for="game in filteredGames"
+            :key="game.id"
+            class="flex items-center justify-between border-2 border-[#6b5a45] bg-[#1a1814] px-4 py-3 hover:border-[#c4941f] transition-all"
+          >
+            <div class="flex-1">
+              <div class="mb-1 flex items-center space-x-2">
+                <span class="font-medium text-[#f5f0e6]">{{ game.name }}</span>
+                <a
+                  v-if="game.link"
+                  :href="game.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                  class="text-[#8b8178] hover:text-[#c4941f]"
+                  title="打开链接"
+                >
+                  <Icon icon="mdi:open-in-new" class="h-4 w-4" />
+                </a>
+              </div>
+              <div v-if="game.link" class="font-mono-retro text-xs text-[#8b8178] truncate max-w-md">
+                {{ game.link }}
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <button
+                @click="editPresetGame(game)"
+                class="btn btn-ghost"
+                title="编辑"
+              >
+                <Icon icon="mdi:pencil" class="h-5 w-5" />
+              </button>
+              <button
+                @click="deletePresetGame(game.id)"
+                class="btn btn-danger"
+                title="删除"
+              >
+                <Icon icon="mdi:delete" class="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 编辑游戏对话框 -->
+      <teleport to="body">
+        <div v-if="showEditGameDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div class="card w-full max-w-md p-6">
+            <h3 class="title-subsection mb-4 text-[#f5f0e6]">编辑预设游戏</h3>
+            <div class="mb-4">
+              <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏名称</label>
+              <input
+                v-model="editingGame.name"
+                type="text"
+                class="input-field"
+              />
+            </div>
+            <div class="mb-6">
+              <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏链接（可选）</label>
+              <input
+                v-model="editingGame.link"
+                type="url"
+                class="input-field"
+              />
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button
+                @click="showEditGameDialog = false"
+                class="btn btn-ghost"
+              >
+                取消
+              </button>
+              <button
+                @click="updatePresetGame"
+                :disabled="updatingGame || !editingGame.name.trim()"
+                class="btn btn-primary"
+              >
+                {{ updatingGame ? '保存中...' : '保存' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </teleport>
+    </div>
+
     <!-- 积分调整对话框 -->
     <teleport to="body">
       <div v-if="showScoreDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
@@ -517,12 +696,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Icon } from '@iconify/vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi, authApi } from '../api';
 
-const activeTab = ref<'invites' | 'users' | 'audit' | 'backup'>('invites');
+const activeTab = ref<'invites' | 'users' | 'audit' | 'backup' | 'games'>('invites');
 
 // 监听标签切换，自动加载数据
 watch(activeTab, (newTab) => {
@@ -530,6 +709,8 @@ watch(activeTab, (newTab) => {
     loadUsers();
   } else if (newTab === 'audit' && auditLogs.value.length === 0) {
     loadAuditLogs();
+  } else if (newTab === 'games' && presetGames.value.length === 0) {
+    loadPresetGames();
   }
 });
 const inviteCount = ref(1);
@@ -1080,6 +1261,225 @@ const handleExport = async () => {
     ElMessage.error('导出失败: ' + (error.response?.data?.error || error.message));
   } finally {
     exporting.value = false;
+  }
+};
+
+// ==================== 预设游戏管理 ====================
+const presetGames = ref<any[]>([]);
+const loadingGames = ref(false);
+const gameSearchQuery = ref('');
+const newGameName = ref('');
+const newGameLink = ref('');
+const creatingGame = ref(false);
+const showEditGameDialog = ref(false);
+const editingGame = ref({ id: '', name: '', link: '' });
+const updatingGame = ref(false);
+const importFileInput = ref<HTMLInputElement | null>(null);
+
+// 获取 Token
+const getToken = () => localStorage.getItem('token');
+
+// 加载预设游戏列表
+const loadPresetGames = async () => {
+  loadingGames.value = true;
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games`, {
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      presetGames.value = data;
+    }
+  } catch (error: any) {
+    ElMessage.error('加载预设游戏失败');
+  } finally {
+    loadingGames.value = false;
+  }
+};
+
+// 过滤后的游戏列表
+const filteredGames = computed(() => {
+  if (!gameSearchQuery.value.trim()) {
+    return presetGames.value;
+  }
+  const query = gameSearchQuery.value.toLowerCase();
+  return presetGames.value.filter((game) =>
+    game.name.toLowerCase().includes(query)
+  );
+});
+
+// 创建预设游戏
+const createPresetGame = async () => {
+  if (!newGameName.value.trim()) {
+    ElMessage.warning('请输入游戏名称');
+    return;
+  }
+
+  creatingGame.value = true;
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: newGameName.value.trim(),
+        link: newGameLink.value.trim() || null,
+      }),
+    });
+
+    if (response.ok) {
+      ElMessage.success('游戏添加成功');
+      newGameName.value = '';
+      newGameLink.value = '';
+      await loadPresetGames();
+    } else {
+      const error = await response.json();
+      ElMessage.error(error.error || '添加失败');
+    }
+  } catch (error: any) {
+    ElMessage.error('添加失败');
+  } finally {
+    creatingGame.value = false;
+  }
+};
+
+// 编辑预设游戏
+const editPresetGame = (game: any) => {
+  editingGame.value = { ...game };
+  showEditGameDialog.value = true;
+};
+
+// 更新预设游戏
+const updatePresetGame = async () => {
+  if (!editingGame.value.name.trim()) {
+    ElMessage.warning('请输入游戏名称');
+    return;
+  }
+
+  updatingGame.value = true;
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games/${editingGame.value.id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: editingGame.value.name.trim(),
+        link: editingGame.value.link?.trim() || null,
+      }),
+    });
+
+    if (response.ok) {
+      ElMessage.success('游戏更新成功');
+      showEditGameDialog.value = false;
+      await loadPresetGames();
+    } else {
+      const error = await response.json();
+      ElMessage.error(error.error || '更新失败');
+    }
+  } catch (error: any) {
+    ElMessage.error('更新失败');
+  } finally {
+    updatingGame.value = false;
+  }
+};
+
+// 删除预设游戏
+const deletePresetGame = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个预设游戏吗？', '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+      },
+    });
+
+    if (response.ok) {
+      ElMessage.success('游戏已删除');
+      await loadPresetGames();
+    } else {
+      const error = await response.json();
+      ElMessage.error(error.error || '删除失败');
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败');
+    }
+  }
+};
+
+// 导出预设游戏
+const exportPresetGames = () => {
+  const dataStr = JSON.stringify(presetGames.value, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  a.download = `preset_games_${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  ElMessage.success('导出成功');
+};
+
+// 触发导入对话框
+const triggerImportGames = () => {
+  importFileInput.value?.click();
+};
+
+// 导入预设游戏
+const importPresetGames = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    if (!Array.isArray(data)) {
+      ElMessage.error('导入文件格式错误');
+      return;
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games/import`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ games: data }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      ElMessage.success(`成功导入 ${result.imported} 个游戏${result.failed > 0 ? `，失败 ${result.failed} 个` : ''}`);
+      await loadPresetGames();
+    } else {
+      const error = await response.json();
+      ElMessage.error(error.error || '导入失败');
+    }
+  } catch (error: any) {
+    ElMessage.error('导入失败: 文件格式错误');
+  } finally {
+    // 重置 input
+    target.value = '';
   }
 };
 

@@ -24,6 +24,73 @@ const endVotingTime = ref('');
 const minPlayers = ref(2);
 const loading = ref(false);
 
+// 预设游戏相关
+const presetGames = ref<any[]>([]);
+const presetGameSearch = ref('');
+const loadingPresetGames = ref(false);
+const showPresetGameDialog = ref(false);
+
+// 获取 Token
+const getToken = () => localStorage.getItem('token');
+
+// 加载预设游戏
+const loadPresetGames = async () => {
+  loadingPresetGames.value = true;
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games`, {
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      presetGames.value = data;
+    }
+  } catch (error) {
+    // 静默失败
+  } finally {
+    loadingPresetGames.value = false;
+  }
+};
+
+// 过滤后的预设游戏
+const filteredPresetGames = computed(() => {
+  if (!presetGameSearch.value.trim()) {
+    return presetGames.value;
+  }
+  const query = presetGameSearch.value.toLowerCase();
+  return presetGames.value.filter((game) =>
+    game.name.toLowerCase().includes(query)
+  );
+});
+
+// 添加预设游戏到选项
+const addPresetGame = (game: any) => {
+  // 查找完全空的对象（没名字也没链接）
+  const emptyIndex = gameOptions.value.findIndex(
+    opt => !opt.name?.trim() && !opt.link?.trim()
+  );
+
+  if (emptyIndex !== -1) {
+    // 复用空对象
+    gameOptions.value[emptyIndex] = {
+      name: game.name,
+      link: game.link || '',
+      showLinkInput: false,
+    };
+  } else {
+    // 创建新对象
+    gameOptions.value.push({
+      name: game.name,
+      link: game.link || '',
+      showLinkInput: false,
+    });
+  }
+
+  // 不关闭弹窗，方便连续添加
+  ElMessage.success(`已添加：${game.name}`);
+};
+
 // 添加游戏选项
 const addGameOption = () => {
   gameOptions.value.push({ name: '', link: '', showLinkInput: false });
@@ -98,6 +165,7 @@ onMounted(() => {
     ElMessage.warning('管理员不能发起活动');
     router.push('/dashboard');
   }
+  loadPresetGames();
 });
 </script>
 
@@ -174,14 +242,24 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              @click="addGameOption"
-              class="mt-3 btn btn-ghost"
-            >
-              <Icon icon="mdi:plus" class="mr-2 h-5 w-5" />
-              添加更多选项
-            </button>
+            <div class="mt-3 flex gap-3">
+              <button
+                type="button"
+                @click="addGameOption"
+                class="btn btn-ghost"
+              >
+                <Icon icon="mdi:plus" class="mr-2 h-5 w-5" />
+                添加更多选项
+              </button>
+              <button
+                type="button"
+                @click="showPresetGameDialog = true"
+                class="btn btn-ghost"
+              >
+                <Icon icon="mdi:gamepad-variant" class="mr-2 h-5 w-5" />
+                从预设添加
+              </button>
+            </div>
           </div>
 
           <!-- 时间设置 -->
@@ -258,6 +336,73 @@ onMounted(() => {
         </form>
       </div>
     </div>
+
+    <!-- 预设游戏对话框 -->
+    <teleport to="body">
+      <div v-if="showPresetGameDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+        <div class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="title-subsection text-[#f5f0e6]">选择预设游戏</h3>
+            <button @click="showPresetGameDialog = false" class="btn btn-ghost">
+              <Icon icon="mdi:close" class="h-5 w-5" />
+            </button>
+          </div>
+
+          <!-- 搜索框 -->
+          <div class="mb-4">
+            <input
+              v-model="presetGameSearch"
+              type="text"
+              class="input-field"
+              placeholder="> 搜索预设游戏..."
+            />
+          </div>
+
+          <!-- 游戏列表 -->
+          <div v-if="loadingPresetGames" class="py-8 text-center font-mono-retro text-[#8b8178]">
+            > 加载中...
+          </div>
+
+          <div
+            v-else-if="filteredPresetGames.length === 0"
+            class="py-8 text-center font-mono-retro text-[#6b5a45]"
+          >
+            > {{ presetGameSearch ? '未找到匹配的游戏' : '暂无预设游戏' }}
+          </div>
+
+          <div v-else class="max-h-96 space-y-2 overflow-y-auto">
+            <button
+              v-for="game in filteredPresetGames"
+              :key="game.id"
+              type="button"
+              @click="addPresetGame(game)"
+              class="w-full flex items-center justify-between border-2 border-[#6b5a45] bg-[#1a1814] px-4 py-3 hover:border-[#c4941f] transition-all text-left"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-2">
+                  <span class="font-medium text-[#f5f0e6]">{{ game.name }}</span>
+                  <a
+                    v-if="game.link"
+                    :href="game.link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click.stop
+                    class="text-[#8b8178] hover:text-[#c4941f] flex-shrink-0"
+                    title="查看链接"
+                  >
+                    <Icon icon="mdi:open-in-new" class="h-4 w-4" />
+                  </a>
+                </div>
+                <div v-if="game.link" class="font-mono-retro text-xs text-[#8b8178] mt-1 truncate">
+                  {{ game.link }}
+                </div>
+              </div>
+              <Icon icon="mdi:plus-circle" class="h-6 w-6 text-[#6b9b7a] flex-shrink-0 ml-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 

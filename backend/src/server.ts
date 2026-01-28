@@ -51,6 +51,7 @@ app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/badges', require('./routes/badges'));
+app.use('/api/preset-games', require('./routes/presetGames'));
 
 // Socket.io 连接处理
 io.on('connection', (socket) => {
