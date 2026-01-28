@@ -19,8 +19,14 @@ interface GameOption {
 }
 
 const gameOptions = ref<GameOption[]>([{ name: '', link: '', showLinkInput: false }]);
-const startTime = ref('');
-const endVotingTime = ref('');
+
+// 默认时间逻辑：2小时后开始，1小时后截止投票
+const now = new Date();
+const tzOffset = now.getTimezoneOffset() * 60000; // 偏移量（毫秒）
+const formatLocalISO = (date: Date) => new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+
+const startTime = ref(formatLocalISO(new Date(now.getTime() + (2 * 60 + 10) * 60 * 1000)));
+const endVotingTime = ref(formatLocalISO(new Date(now.getTime() + (1 * 60 + 10) * 60 * 1000)));
 const minPlayers = ref(2);
 const loading = ref(false);
 
@@ -274,7 +280,7 @@ onMounted(() => {
                 v-model="startTime"
                 type="datetime-local"
                 class="input-field"
-                :min="new Date().toISOString().slice(0, 16)"
+                :min="formatLocalISO(new Date())"
               />
             </div>
 
@@ -289,7 +295,7 @@ onMounted(() => {
                 v-model="endVotingTime"
                 type="datetime-local"
                 class="input-field"
-                :min="new Date().toISOString().slice(0, 16)"
+                :min="formatLocalISO(new Date())"
               />
             </div>
           </div>
