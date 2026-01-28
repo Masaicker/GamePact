@@ -550,6 +550,7 @@ onUnmounted(() => {
                       :href="parsedGameOptions[index].link"
                       target="_blank"
                       rel="noopener noreferrer"
+                      @click.stop
                       class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
                     >
                       {{ game.name }}
@@ -667,6 +668,7 @@ onUnmounted(() => {
                   :href="parsedGameOptions[getUserVote].link"
                   target="_blank"
                   rel="noopener noreferrer"
+                  @click.stop
                   class="text-[#6b9b7a] underline underline-offset-2 decoration-2 mx-1"
                 >
                   {{ parsedGameOptions[getUserVote].name }}
@@ -697,6 +699,7 @@ onUnmounted(() => {
                       :href="parsedGameOptions[index].link"
                       target="_blank"
                       rel="noopener noreferrer"
+                      @click.stop
                       class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
                     >
                       {{ game.name }}
@@ -802,6 +805,7 @@ onUnmounted(() => {
                   :href="parsedGameOptions.find(o => o.name === finalGameName)!.link"
                   target="_blank"
                   rel="noopener noreferrer"
+                  @click.stop
                   class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
                 >
                   {{ finalGameName }}
@@ -846,6 +850,7 @@ onUnmounted(() => {
                   :href="parsedGameOptions[result.gameIndex].link"
                   target="_blank"
                   rel="noopener noreferrer"
+                  @click.stop
                   class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
                 >
                   {{ result.gameName }}

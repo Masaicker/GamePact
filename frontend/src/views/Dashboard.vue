@@ -484,6 +484,7 @@ onUnmounted(() => {
                         :href="parseFirstGameOption(session).link"
                         target="_blank"
                         rel="noopener noreferrer"
+                        @click.stop
                         class="hover:text-[#d4a017] underline underline-offset-2 decoration-2"
                       >
                         {{ parseFirstGameOption(session).name }}
