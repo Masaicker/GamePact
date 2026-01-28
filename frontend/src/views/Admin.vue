@@ -701,10 +701,13 @@ import { Icon } from '@iconify/vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi, authApi } from '../api';
 
-const activeTab = ref<'invites' | 'users' | 'audit' | 'backup' | 'games'>('invites');
+const activeTab = ref<'invites' | 'users' | 'audit' | 'backup' | 'games'>(
+  (localStorage.getItem('adminTab') as any) || 'invites'
+);
 
-// 监听标签切换，自动加载数据
+// 监听标签切换，持久化状态并自动加载数据
 watch(activeTab, (newTab) => {
+  localStorage.setItem('adminTab', newTab);
   if (newTab === 'users' && users.value.length === 0) {
     loadUsers();
   } else if (newTab === 'audit' && auditLogs.value.length === 0) {
@@ -1485,6 +1488,14 @@ const importPresetGames = async (event: Event) => {
 
 onMounted(() => {
   loadInvites();
+  // 根据持久化的标签页加载对应数据
+  if (activeTab.value === 'users') {
+    loadUsers();
+  } else if (activeTab.value === 'audit') {
+    loadAuditLogs();
+  } else if (activeTab.value === 'games') {
+    loadPresetGames();
+  }
 });
 </script>
 
