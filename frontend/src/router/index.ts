@@ -101,6 +101,11 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // 现在检查认证状态（用户信息已加载）
+  // 已登录用户访问登录/注册页，重定向到控制台
+  if ((to.name === 'Login' || to.name === 'Register') && userStore.token) {
+    next({ name: 'Dashboard' });
+    return;
+  }
   if (to.meta.requiresAuth && !userStore.token && !userStore.user) {
     next({ name: 'Login', query: { redirect: to.fullPath } });
   } else if (to.meta.requiresAdmin) {
