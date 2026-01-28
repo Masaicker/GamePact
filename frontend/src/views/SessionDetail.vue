@@ -35,6 +35,7 @@ const formatTime = (dateStr: string) => {
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
     voting: '投票中',
+    expired: '已截止',
     confirmed: '已成行',
     playing: '游玩中',
     settled: '已结算',
@@ -47,6 +48,7 @@ const getStatusText = (status: string) => {
 const getStatusBadgeClass = (status: string) => {
   const map: Record<string, string> = {
     voting: 'badge-accent',
+    expired: 'badge-secondary',
     confirmed: 'badge-success',
     playing: 'badge-primary',
     settled: 'badge-success',
@@ -59,6 +61,7 @@ const getStatusBadgeClass = (status: string) => {
 const getStatusIcon = (status: string) => {
   const iconMap: Record<string, string> = {
     voting: 'mdi:vote',
+    expired: 'mdi:clock-alert',
     confirmed: 'mdi:check-circle',
     playing: 'mdi:play',
     settled: 'mdi:check',
@@ -79,9 +82,9 @@ const isAdmin = computed(() => userStore.user?.isAdmin || false);
 // 是否可以删除活动（发起人 或 管理员）
 const canDelete = computed(() => (isInitiator.value || isAdmin.value) && session.value?.status === 'voting');
 
-// 是否可以投票（未投票状态）
+// 是否可以投票（未投票状态且未截止）
 const canVote = computed(() => {
-  return session.value && session.value.status === 'voting' && !currentUserParticipant.value?.isExcused && !hasVoted.value;
+  return session.value && session.value.status === 'voting' && !isVotingExpired.value && !currentUserParticipant.value?.isExcused && !hasVoted.value;
 });
 
 // 解析游戏选项（兼容字符串数组和对象数组）
@@ -108,7 +111,7 @@ const finalGameName = computed(() => {
   return null;
 });
 
-// 显示投票结果（投票中或已投票都可以看结果）
+// 显示投票结果（投票中或已投票都可以看结果，或者已截止）
 const showVoteResults = computed(() => {
   return session.value && session.value.status === 'voting' && !currentUserParticipant.value?.isExcused;
 });
@@ -120,6 +123,20 @@ const hasVoted = computed(() => {
     return p.user?.id === userId;
   });
   return participant?.votedAt;
+});
+
+// 投票是否已截止
+const isVotingExpired = computed(() => {
+  if (!session.value?.endVotingTime) return false;
+  return new Date(session.value.endVotingTime) < new Date();
+});
+
+// 显示状态（考虑投票截止时间）
+const displayStatus = computed(() => {
+  if (session.value?.status === 'voting' && isVotingExpired.value) {
+    return 'expired';
+  }
+  return session.value?.status;
 });
 
 // 获取当前用户的参与记录
@@ -395,9 +412,9 @@ onUnmounted(() => {
               <h1 class="title-display text-[#f5f0e6]">
                 {{ finalGameName || parsedGameOptions[0]?.name || '未定游戏' }}
               </h1>
-              <span class="badge" :class="getStatusBadgeClass(session.status)">
-                <Icon :icon="getStatusIcon(session.status)" class="mr-1.5 h-3.5 w-3.5" />
-                {{ getStatusText(session.status) }}
+              <span class="badge" :class="getStatusBadgeClass(displayStatus)">
+                <Icon :icon="getStatusIcon(displayStatus)" class="mr-1.5 h-3.5 w-3.5" />
+                {{ getStatusText(displayStatus) }}
               </span>
             </div>
             <p class="font-mono-retro text-[#8b8178]">
@@ -463,21 +480,25 @@ onUnmounted(() => {
                 <Icon icon="mdi:clock-alert" class="mr-1.5 h-3.5 w-3.5" />
                 已请假
               </span>
+              <span v-else-if="isVotingExpired" class="ml-3 badge badge-secondary">
+                <Icon icon="mdi:clock-alert" class="mr-1.5 h-3.5 w-3.5" />
+                投票已截止
+              </span>
               <span v-else-if="hasVoted" class="ml-3 badge badge-success">
                 <Icon icon="mdi:check-circle" class="mr-1.5 h-3.5 w-3.5" />
                 已投票
               </span>
               <span v-else class="ml-3 font-mono-retro text-[#6b5a45]">未投票</span>
             </div>
-            <!-- 请假规则提示 -->
-            <div v-if="!currentUserParticipant?.isExcused" class="font-mono-retro text-xs text-[#6b5a45]">
+            <!-- 请假规则提示（仅在未请假且未截止时显示） -->
+            <div v-if="!currentUserParticipant?.isExcused && !isVotingExpired" class="font-mono-retro text-xs text-[#6b5a45]">
               <Icon icon="mdi:information" class="mr-1 h-3 w-3 inline" />
               未投票：随时可请假 | 已投票：活动开始前2小时外可请假
             </div>
           </div>
           <!-- 请假按钮 -->
           <button
-            v-if="!currentUserParticipant?.isExcused && !isInitiator"
+            v-if="!currentUserParticipant?.isExcused && !isInitiator && !isVotingExpired"
             @click="handleExcuse"
             :disabled="voting"
             class="btn btn-secondary"
@@ -493,6 +514,13 @@ onUnmounted(() => {
           <div v-if="isAdmin" class="mb-6 border-2 border-[#a34d1d] bg-[#a34d1d]/10 p-4 text-center">
             <Icon icon="mdi:shield-alert" class="mr-2 h-6 w-6 text-[#a34d1d]" />
             <span class="font-mono-retro text-[#a34d1d]">管理员不能参与活动投票</span>
+          </div>
+
+          <!-- 投票已截止提示 -->
+          <div v-else-if="isVotingExpired && !hasVoted" class="mb-6 border-2 border-[#a34d1d] bg-[#a34d1d]/10 p-8 text-center">
+            <Icon icon="mdi:clock-alert" class="mx-auto mb-3 h-16 w-16 text-[#a34d1d]" />
+            <h3 class="mb-2 title-subsection text-[#a34d1d]">投票已截止</h3>
+            <p class="font-mono-retro text-[#8b8178]">您未在截止时间前完成投票</p>
           </div>
 
           <!-- 未投票状态 -->

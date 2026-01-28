@@ -125,10 +125,25 @@ const getTimeRemaining = (endTime: string) => {
   return `${hours}h ${minutes}m`;
 };
 
+// 判断投票是否已截止
+const isVotingExpired = (endTime: string) => {
+  const end = new Date(endTime);
+  return end < new Date();
+};
+
+// 获取显示状态（考虑截止时间）
+const getDisplayStatus = (session: any) => {
+  if (session.status === 'voting' && isVotingExpired(session.endVotingTime)) {
+    return 'expired';
+  }
+  return session.status;
+};
+
 // 获取状态文本
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
     voting: '投票中',
+    expired: '已截止',
     confirmed: '已成行',
     playing: '游玩中',
     settled: '已结算',
@@ -141,6 +156,7 @@ const getStatusText = (status: string) => {
 const getStatusBadgeClass = (status: string) => {
   const map: Record<string, string> = {
     voting: 'badge-accent',
+    expired: 'badge-secondary',
     confirmed: 'badge-success',
     playing: 'badge-primary',
     settled: 'badge-success',
@@ -153,6 +169,7 @@ const getStatusBadgeClass = (status: string) => {
 const getStatusIcon = (status: string) => {
   const iconMap: Record<string, string> = {
     voting: 'mdi:vote',
+    expired: 'mdi:clock-alert',
     confirmed: 'mdi:check-circle',
     playing: 'mdi:play',
     settled: 'mdi:check',
@@ -450,9 +467,9 @@ onUnmounted(() => {
                 <div class="flex-1">
                   <!-- 状态和时间 -->
                   <div class="mb-3 flex flex-wrap items-center gap-2">
-                    <span class="badge" :class="getStatusBadgeClass(session.status)">
-                      <Icon :icon="getStatusIcon(session.status)" class="mr-1.5 h-3.5 w-3.5" />
-                      {{ getStatusText(session.status) }}
+                    <span class="badge" :class="getStatusBadgeClass(getDisplayStatus(session))">
+                      <Icon :icon="getStatusIcon(getDisplayStatus(session))" class="mr-1.5 h-3.5 w-3.5" />
+                      {{ getStatusText(getDisplayStatus(session)) }}
                     </span>
                     <span class="font-mono-retro text-xs text-[#8b8178] flex items-center">
                       <Icon icon="mdi:calendar" class="mr-1 h-3.5 w-3.5" />
