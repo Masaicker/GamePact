@@ -1,5 +1,5 @@
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <h1 class="title-display mb-8 text-[#f5f0e6]">管理面板</h1>
 
     <!-- 选项卡导航 -->

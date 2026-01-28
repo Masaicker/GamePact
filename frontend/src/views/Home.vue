@@ -6,7 +6,7 @@ const userStore = useUserStore();
 </script>
 
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <div class="text-center">
       <!-- Hero -->
       <div class="mb-12">

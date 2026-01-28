@@ -217,7 +217,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <!-- 加载状态 -->
     <div v-if="loading" class="card p-12">
       <div class="flex flex-col items-center justify-center">

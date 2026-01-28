@@ -46,7 +46,7 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <div class="mx-auto max-w-md">
       <div class="card p-8">
         <div class="mb-8 text-center">

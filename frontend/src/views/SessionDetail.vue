@@ -416,7 +416,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <div v-if="loading" class="card p-12">
       <div class="flex flex-col items-center justify-center">
         <div class="loading-spinner mb-4"></div>

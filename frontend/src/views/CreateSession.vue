@@ -170,7 +170,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <div class="max-w-3xl mx-auto">
       <!-- 返回按钮 -->
       <button

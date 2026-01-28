@@ -383,7 +383,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="page-container crt-flicker">
+  <div class="page-container">
     <!-- 欢迎卡片 -->
     <div class="card mb-8 p-6 bg-gradient-to-r from-[#2d2a26] to-[#1a1814]">
       <div class="flex items-center space-x-4">

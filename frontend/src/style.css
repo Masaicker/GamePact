@@ -370,23 +370,6 @@ body::after {
   margin-left: 2px;
 }
 
-/* CRT 闪烁效果 */
-@keyframes crt-flicker {
-  0% { opacity: 0.98; }
-  5% { opacity: 0.95; }
-  10% { opacity: 0.98; }
-  15% { opacity: 0.99; }
-  20% { opacity: 0.96; }
-  25% { opacity: 0.98; }
-  30% { opacity: 0.97; }
-  35% { opacity: 0.99; }
-  100% { opacity: 0.98; }
-}
-
-.crt-flicker {
-  animation: crt-flicker 8s infinite;
-}
-
 /* 过渡效果 */
 .transition-retro {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
