@@ -5,6 +5,7 @@ import { Icon } from '@iconify/vue';
 import { sessionsApi } from '../api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '../stores/user';
+import { getGameCardBackground, getSessionHeaderBackground, getGamePortraitBackground } from '../utils/steam';
 
 const route = useRoute();
 const router = useRouter();
@@ -116,6 +117,26 @@ const showVoteResults = computed(() => {
   return session.value && session.value.status === 'voting' && !currentUserParticipant.value?.isExcused;
 });
 
+// 最终游戏的链接（用于背景图）
+const finalGameLink = computed(() => {
+  // 1. 优先使用 finalGame
+  if (session.value?.finalGame) {
+    if (typeof session.value.finalGame === 'string') {
+      return parsedGameOptions.value.find(opt => opt.name === session.value.finalGame)?.link || null;
+    }
+    if (typeof session.value.finalGame === 'object') {
+      return session.value.finalGame.link || parsedGameOptions.value.find(opt => opt.name === session.value.finalGame.name)?.link || null;
+    }
+  }
+  
+  // 2. 如果没有 finalGame，回退到第一个选项（与显示的标题逻辑一致）
+  if (parsedGameOptions.value.length > 0) {
+    return parsedGameOptions.value[0].link || null;
+  }
+  
+  return null;
+});
+
 // 是否已投票
 const hasVoted = computed(() => {
   const participant = session.value?.participants?.find((p: any) => {
@@ -170,7 +191,7 @@ const voteResults = computed(() => {
       try {
         const ranking = JSON.parse(p.voteRanking);
         if (Array.isArray(ranking) && ranking.length > 0) {
-          const votedIndex = ranking[0];
+          const votedIndex = Number(ranking[0]);
           if (results[votedIndex]) {
             results[votedIndex].voteCount++;
             results[votedIndex].voters.push({ id: p.user.id, displayName: p.user.displayName });
@@ -197,7 +218,7 @@ const getUserVote = computed(() => {
     try {
       const ranking = JSON.parse(participant.voteRanking);
       if (Array.isArray(ranking) && ranking.length > 0) {
-        return ranking[0];
+        return Number(ranking[0]);
       }
     } catch (e) {
       // 忽略解析错误
@@ -405,22 +426,27 @@ onUnmounted(() => {
       </button>
 
       <!-- 活动信息卡片 -->
-      <div class="card p-6">
-        <div class="flex items-start justify-between mb-6">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-3">
-              <h1 class="title-display text-[#f5f0e6]">
-                {{ finalGameName || parsedGameOptions[0]?.name || '未定游戏' }}
-              </h1>
-              <span class="badge" :class="getStatusBadgeClass(displayStatus)">
-                <Icon :icon="getStatusIcon(displayStatus)" class="mr-1.5 h-3.5 w-3.5" />
-                {{ getStatusText(displayStatus) }}
-              </span>
+      <div class="card p-6 relative overflow-hidden">
+        <!-- Steam 背景淡化层 -->
+        <div v-if="finalGameLink" class="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none mix-blend-luminosity"
+             :style="{ ...getSessionHeaderBackground(finalGameLink), maskImage: 'linear-gradient(to bottom, black 0%, transparent 90%)', webkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 90%)' }"></div>
+
+        <div class="relative z-10">
+          <div class="flex items-start justify-between mb-6">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-3">
+                <h1 class="title-display text-[#f5f0e6]">
+                  {{ finalGameName || parsedGameOptions[0]?.name || '未定游戏' }}
+                </h1>
+                <span class="badge" :class="getStatusBadgeClass(displayStatus)">
+                  <Icon :icon="getStatusIcon(displayStatus)" class="mr-1.5 h-3.5 w-3.5" />
+                  {{ getStatusText(displayStatus) }}
+                </span>
+              </div>
+              <p class="font-mono-retro text-[#8b8178]">
+                由 {{ session.initiator?.displayName }} 发起
+              </p>
             </div>
-            <p class="font-mono-retro text-[#8b8178]">
-              由 {{ session.initiator?.displayName }} 发起
-            </p>
-          </div>
           <!-- 删除活动按钮（发起人或管理员可见） -->
           <button
             v-if="canDelete"
@@ -430,7 +456,7 @@ onUnmounted(() => {
             <Icon icon="mdi:delete" class="mr-2 h-4 w-4" />
             删除活动
           </button>
-        </div>
+          </div>
 
         <div class="grid grid-cols-2 gap-4 border-t-2 border-[#6b5a45] pt-6">
           <div class="flex items-center space-x-3">
@@ -462,6 +488,7 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       <!-- 投票区域 -->
@@ -535,48 +562,53 @@ onUnmounted(() => {
                 v-for="(game, index) in parsedGameOptions"
                 :key="game.name || index"
                 @click="selectedGameIndex = index"
-                class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4 cursor-pointer hover:border-[#c4941f] transition-all"
+                class="game-card-with-bg border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4 cursor-pointer hover:border-[#c4941f] transition-all relative overflow-hidden"
                 :class="{ 'border-[#c4941f] bg-[#c4941f]/10': selectedGameIndex === index }"
               >
-                <!-- 游戏名和排名 -->
-                <div class="mb-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="font-mono-retro text-xs font-bold text-[#8b8178]">
-                      #{{ index + 1 }}
-                    </span>
-                  </div>
-                  <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
-                    <a
-                      :href="parsedGameOptions[index].link"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click.stop
-                      class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
-                    >
-                      {{ game.name }}
-                      <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
-                    </a>
-                  </h4>
-                  <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
-                </div>
-
-                <!-- 纵向进度条容器 -->
-                <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
-                  <!-- 纵向进度条 -->
-                  <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
-                    <div
-                      class="w-full rounded-t"
-                      :class="selectedGameIndex === index ? 'bg-[#c4941f]' : 'bg-[#2d2a26]'"
-                      :style="{ height: totalVotes > 0 ? ((voteResults.find(r => r.gameIndex === index)?.voteCount || 0) / totalVotes * 100) + '%' : '0%' }"
-                    >
-                      <!-- 网格纹理 -->
-                      <div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);"></div>
+                <!-- 内容层级 -->
+                <div class="relative z-10">
+                  <!-- 游戏名和排名 -->
+                  <div class="mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-mono-retro text-xs font-bold text-[#8b8178]">
+                        #{{ index + 1 }}
+                      </span>
                     </div>
+                    <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
+                      <a
+                        :href="parsedGameOptions[index].link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        @click.stop
+                        class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                      >
+                        {{ game.name }}
+                        <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                      </a>
+                    </h4>
+                    <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
                   </div>
 
-                  <!-- 投票者头像圆圈（进度条上方） -->
-                  <div class="relative z-10 flex flex-wrap justify-center gap-1 px-1 pb-1">
-                    <template v-if="voteResults.find(r => r.gameIndex === index)?.voters.length > 0">
+                  <!-- 纵向进度条容器 -->
+                  <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
+                    <!-- Steam 竖版背景 -->
+                    <div v-if="game.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50"
+                         :style="{ ...getGamePortraitBackground(game.link), opacity: getUserVote === index ? 0.7 : 0.25 }"></div>
+
+                    <!-- 纵向进度条 -->
+                    <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
+                      <div
+                        class="w-full rounded-t"
+                        :class="selectedGameIndex === index ? 'bg-[#c4941f]' : 'bg-[#2d2a26]'"
+                        :style="{ height: totalVotes > 0 ? ((voteResults.find(r => r.gameIndex === index)?.voteCount || 0) / totalVotes * 100) + '%' : '0%' }"
+                      >
+                        <!-- 网格纹理 -->
+                        <div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);"></div>
+                      </div>
+                    </div>
+
+                    <!-- 投票者头像圆圈（进度条上方） -->
+                    <div v-if="voteResults.find(r => r.gameIndex === index)?.voters.length > 0" class="relative z-10 flex flex-wrap justify-center gap-1 px-1 pb-1">
                       <router-link
                         v-for="(voter, vIndex) in voteResults.find(r => r.gameIndex === index)!.voters.slice(0, 10)"
                         :key="voter.id"
@@ -606,30 +638,30 @@ onUnmounted(() => {
                       >
                         +{{ voteResults.find(r => r.gameIndex === index)!.voters.length - 10 }}
                       </div>
-                    </template>
-                    <div v-else class="absolute inset-0 flex items-center justify-center">
-                      <span class="font-mono-retro text-xs text-[#6b5a45]">暂无投票</span>
+                    </div>
+                    <div v-else class="absolute inset-0 flex items-end justify-center pb-2 pointer-events-none">
+                      <span class="font-mono-retro text-xs text-[#f5f0e6] opacity-80">暂无投票</span>
                     </div>
                   </div>
-                </div>
 
-                <!-- 票数和百分比 -->
-                <div class="mt-3 flex items-center justify-between">
-                  <div class="flex items-center space-x-2">
-                    <span class="font-mono-retro text-lg font-bold" :class="selectedGameIndex === index ? 'text-[#c4941f]' : 'text-[#8b8178]'">
-                      {{ voteResults.find(r => r.gameIndex === index)?.voteCount || 0 }}
+                  <!-- 票数和百分比 -->
+                  <div class="mt-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-mono-retro text-lg font-bold" :class="selectedGameIndex === index ? 'text-[#c4941f]' : 'text-[#8b8178]'">
+                        {{ voteResults.find(r => r.gameIndex === index)?.voteCount || 0 }}
+                      </span>
+                      <span class="text-xs text-[#6b5a45]">票</span>
+                    </div>
+                    <span class="font-mono-retro text-xs text-[#6b5a45]">
+                      {{ totalVotes > 0 ? Math.round((voteResults.find(r => r.gameIndex === index)?.voteCount || 0) / totalVotes * 100) : 0 }}%
                     </span>
-                    <span class="text-xs text-[#6b5a45]">票</span>
                   </div>
-                  <span class="font-mono-retro text-xs text-[#6b5a45]">
-                    {{ totalVotes > 0 ? Math.round((voteResults.find(r => r.gameIndex === index)?.voteCount || 0) / totalVotes * 100) : 0 }}%
-                  </span>
-                </div>
 
-                <!-- 选中标识 -->
-                <div v-if="selectedGameIndex === index" class="mt-2 text-center">
-                  <Icon icon="mdi:check-circle" class="h-5 w-5 text-[#c4941f] inline" />
-                  <span class="ml-2 font-mono-retro text-xs text-[#c4941f]">已选择</span>
+                  <!-- 选中标识 -->
+                  <div v-if="selectedGameIndex === index" class="mt-2 text-center">
+                    <Icon icon="mdi:check-circle" class="h-5 w-5 text-[#c4941f] inline" />
+                    <span class="ml-2 font-mono-retro text-xs text-[#c4941f]">已选择</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -683,35 +715,43 @@ onUnmounted(() => {
               <div
                 v-for="(game, index) in parsedGameOptions"
                 :key="game.name || index"
-                class="border-2 bg-[#1a1814] rounded p-4"
+                class="game-card-with-bg border-2 bg-[#1a1814] rounded p-4 relative overflow-hidden"
                 :class="getUserVote === index ? 'border-[#c4941f]' : 'border-[#6b5a45]'"
               >
-                <!-- 游戏名和排名 -->
-                <div class="mb-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="font-mono-retro text-xs font-bold" :class="getUserVote === index ? 'text-[#c4941f]' : 'text-[#8b8178]'">
-                      #{{ index + 1 }}
-                      <Icon v-if="getUserVote === index" icon="mdi:check" class="ml-1 h-3 w-3 inline" />
-                    </span>
+                <!-- 内容层级 -->
+                <div class="relative z-10">
+                  <!-- 游戏名和排名 -->
+                  <div class="mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-mono-retro text-xs font-bold" :class="getUserVote === index ? 'text-[#c4941f]' : 'text-[#8b8178]'">
+                        #{{ index + 1 }}
+                        <Icon v-if="getUserVote === index" icon="mdi:check" class="ml-1 h-3 w-3 inline" />
+                      </span>
+                    </div>
+                    <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
+                      <a
+                        :href="parsedGameOptions[index].link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        @click.stop
+                        class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                      >
+                        {{ game.name }}
+                        <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                      </a>
+                    </h4>
+                    <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
                   </div>
-                  <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
-                    <a
-                      :href="parsedGameOptions[index].link"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click.stop
-                      class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
-                    >
-                      {{ game.name }}
-                      <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
-                    </a>
-                  </h4>
-                  <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
-                </div>
 
-                <!-- 纵向进度条容器 -->
-                <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
-                  <!-- 纵向进度条 -->
+                                                                    <!-- 纵向进度条容器 -->
+
+                                                                    <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
+
+                                                                                        <!-- Steam 竖版背景 -->
+
+                                                                                        <div v-if="game.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50 transition-opacity duration-300"
+
+                                                                                             :style="{ ...getGamePortraitBackground(game.link), opacity: getUserVote === index ? 0.7 : 0.25 }"></div>                  <!-- 纵向进度条 -->
                   <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
                     <div
                       class="w-full rounded-t"
@@ -724,40 +764,38 @@ onUnmounted(() => {
                   </div>
 
                   <!-- 投票者头像圆圈（进度条上方） -->
-                  <div class="relative z-10 flex flex-wrap justify-center gap-1 px-1 pb-1">
-                    <template v-if="voteResults.find(r => r.gameIndex === index)?.voters.length > 0">
-                      <router-link
-                        v-for="(voter, vIndex) in voteResults.find(r => r.gameIndex === index)!.voters.slice(0, 10)"
-                        :key="voter.id"
-                        :to="`/profile/${voter.id}`"
-                        class="group relative no-underline"
-                      >
-                        <div
-                          class="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all"
-                          :class="getUserVote === index ? 'bg-[#c4941f] text-[#1a1814]' : 'bg-[#6b5a45] text-[#f5f0e6]'"
-                        >
-                          {{ voter.displayName[0] }}
-                        </div>
-                        <!-- 悬浮提示 -->
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20">
-                          <div class="bg-[#242220] border-2 border-[#c4941f] px-2 py-1 rounded whitespace-nowrap">
-                            <span class="font-mono-retro text-xs text-[#f5f0e6]">{{ voter.displayName }}</span>
-                          </div>
-                          <!-- 小三角 -->
-                          <div class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1 border-4 border-transparent border-t-[#c4941f]"></div>
-                        </div>
-                      </router-link>
+                  <div v-if="voteResults.find(r => r.gameIndex === index)?.voters.length > 0" class="relative z-10 flex flex-wrap justify-center gap-1 px-1 pb-1">
+                    <router-link
+                      v-for="(voter, vIndex) in voteResults.find(r => r.gameIndex === index)!.voters.slice(0, 10)"
+                      :key="voter.id"
+                      :to="`/profile/${voter.id}`"
+                      class="group relative no-underline"
+                    >
                       <div
-                        v-if="voteResults.find(r => r.gameIndex === index)!.voters.length > 10"
-                        class="w-7 h-7 flex items-center justify-center rounded-full bg-[#6b5a45] text-[#f5f0e6] text-xs font-bold"
-                        :title="voteResults.find(r => r.gameIndex === index)!.voters.slice(10).map(v => v.displayName).join('、')"
+                        class="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all"
+                        :class="getUserVote === index ? 'bg-[#c4941f] text-[#1a1814]' : 'bg-[#6b5a45] text-[#f5f0e6]'"
                       >
-                        +{{ voteResults.find(r => r.gameIndex === index)!.voters.length - 10 }}
+                        {{ voter.displayName[0] }}
                       </div>
-                    </template>
-                    <div v-else class="absolute inset-0 flex items-center justify-center">
-                      <span class="font-mono-retro text-xs text-[#6b5a45]">暂无投票</span>
+                      <!-- 悬浮提示 -->
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20">
+                        <div class="bg-[#242220] border-2 border-[#c4941f] px-2 py-1 rounded whitespace-nowrap">
+                          <span class="font-mono-retro text-xs text-[#f5f0e6]">{{ voter.displayName }}</span>
+                        </div>
+                        <!-- 小三角 -->
+                        <div class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1 border-4 border-transparent border-t-[#c4941f]"></div>
+                      </div>
+                    </router-link>
+                    <div
+                      v-if="voteResults.find(r => r.gameIndex === index)!.voters.length > 10"
+                      class="w-7 h-7 flex items-center justify-center rounded-full bg-[#6b5a45] text-[#f5f0e6] text-xs font-bold"
+                      :title="voteResults.find(r => r.gameIndex === index)!.voters.slice(10).map(v => v.displayName).join('、')"
+                    >
+                      +{{ voteResults.find(r => r.gameIndex === index)!.voters.length - 10 }}
                     </div>
+                  </div>
+                  <div v-else class="absolute inset-0 flex items-end justify-center pb-2 pointer-events-none">
+                    <span class="font-mono-retro text-xs text-[#f5f0e6] opacity-80">暂无投票</span>
                   </div>
                 </div>
 
@@ -772,6 +810,7 @@ onUnmounted(() => {
                   <span class="font-mono-retro text-xs text-[#6b5a45]">
                     {{ totalVotes > 0 ? Math.round((voteResults.find(r => r.gameIndex === index)?.voteCount || 0) / totalVotes * 100) : 0 }}%
                   </span>
+                </div>
                 </div>
               </div>
             </div>
@@ -835,48 +874,53 @@ onUnmounted(() => {
           <div
             v-for="(result, index) in voteResults"
             :key="result.gameIndex"
-            class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4 hover:border-[#c4941f] transition-all"
+            class="game-card-with-bg border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4 hover:border-[#c4941f] transition-all relative overflow-hidden"
             :class="{ 'border-[#c4941f] bg-[#c4941f]/10': index === 0 && result.voteCount > 0 }"
           >
-            <!-- 游戏名 -->
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-mono-retro text-xs font-bold" :class="index === 0 && result.voteCount > 0 ? 'text-[#c4941f]' : 'text-[#8b8178]'">
-                  #{{ index + 1 }}
-                </span>
-              </div>
-              <h4 v-if="parsedGameOptions[result.gameIndex]?.link" class="font-bold text-sm leading-tight">
-                <a
-                  :href="parsedGameOptions[result.gameIndex].link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  @click.stop
-                  class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
-                >
-                  {{ result.gameName }}
-                  <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
-                </a>
-              </h4>
-              <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ result.gameName }}</h4>
-            </div>
-
-            <!-- 纵向进度条容器 -->
-            <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
-              <!-- 纵向进度条 -->
-              <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
-                <div
-                  class="w-full rounded-t"
-                  :class="index === 0 && result.voteCount > 0 ? 'bg-[#c4941f]' : 'bg-[#2d2a26]'"
-                  :style="{ height: totalVotes > 0 ? (result.voteCount / totalVotes * 100) + '%' : '0%' }"
-                >
-                  <!-- 网格纹理 -->
-                  <div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);"></div>
+            <!-- 内容层级 -->
+            <div class="relative z-10">
+              <!-- 游戏名 -->
+              <div class="mb-3">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono-retro text-xs font-bold" :class="index === 0 && result.voteCount > 0 ? 'text-[#c4941f]' : 'text-[#8b8178]'">
+                    #{{ index + 1 }}
+                  </span>
                 </div>
+                <h4 v-if="parsedGameOptions[result.gameIndex]?.link" class="font-bold text-sm leading-tight">
+                  <a
+                    :href="parsedGameOptions[result.gameIndex].link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click.stop
+                    class="text-[#c4941f] hover:text-[#d4a017] underline underline-offset-2 decoration-2"
+                  >
+                    {{ result.gameName }}
+                    <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
+                  </a>
+                </h4>
+                <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ result.gameName }}</h4>
               </div>
 
-              <!-- 投票者头像圆圈（进度条上方） -->
-              <div class="relative z-10 flex flex-wrap justify-center gap-1 px-1 pb-1">
-                <template v-if="result.voters.length > 0">
+              <!-- 纵向进度条容器 -->
+              <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
+                <!-- Steam 竖版背景 -->
+                <div v-if="parsedGameOptions[result.gameIndex]?.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50"
+                     :style="{ ...getGamePortraitBackground(parsedGameOptions[result.gameIndex].link), opacity: index === 0 && result.voteCount > 0 ? 0.7 : 0.25 }"></div>
+
+                <!-- 纵向进度条 -->
+                <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
+                  <div
+                    class="w-full rounded-t"
+                    :class="index === 0 && result.voteCount > 0 ? 'bg-[#c4941f]' : 'bg-[#2d2a26]'"
+                    :style="{ height: totalVotes > 0 ? (result.voteCount / totalVotes * 100) + '%' : '0%' }"
+                  >
+                    <!-- 网格纹理 -->
+                    <div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);"></div>
+                  </div>
+                </div>
+
+                <!-- 投票者头像圆圈（进度条上方） -->
+                <div v-if="result.voters.length > 0" class="relative z-10 flex flex-wrap justify-center gap-1 px-1 pb-1">
                   <router-link
                     v-for="(voter, vIndex) in result.voters.slice(0, 10)"
                     :key="voter.id"
@@ -905,24 +949,24 @@ onUnmounted(() => {
                   >
                     +{{ result.voters.length - 10 }}
                   </div>
-                </template>
-                <div v-else class="absolute inset-0 flex items-center justify-center">
-                  <span class="font-mono-retro text-xs text-[#6b5a45]">暂无投票</span>
+                </div>
+                <div v-else class="absolute inset-0 flex items-end justify-center pb-2 pointer-events-none">
+                  <span class="font-mono-retro text-xs text-[#f5f0e6] opacity-80">暂无投票</span>
                 </div>
               </div>
-            </div>
 
-            <!-- 票数和百分比 -->
-            <div class="mt-3 flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span class="font-mono-retro text-lg font-bold" :class="index === 0 && result.voteCount > 0 ? 'text-[#c4941f]' : 'text-[#8b8178]'">
-                  {{ result.voteCount }}
+              <!-- 票数和百分比 -->
+              <div class="mt-3 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono-retro text-lg font-bold" :class="index === 0 && result.voteCount > 0 ? 'text-[#c4941f]' : 'text-[#8b8178]'">
+                    {{ result.voteCount }}
+                  </span>
+                  <span class="text-xs text-[#6b5a45]">票</span>
+                </div>
+                <span class="font-mono-retro text-xs text-[#6b5a45]">
+                  {{ totalVotes > 0 ? Math.round(result.voteCount / totalVotes * 100) : 0 }}%
                 </span>
-                <span class="text-xs text-[#6b5a45]">票</span>
               </div>
-              <span class="font-mono-retro text-xs text-[#6b5a45]">
-                {{ totalVotes > 0 ? Math.round(result.voteCount / totalVotes * 100) : 0 }}%
-              </span>
             </div>
           </div>
         </div>

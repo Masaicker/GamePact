@@ -5,6 +5,7 @@ import { useUserStore } from '../stores/user';
 import { usersApi, sessionsApi, authApi } from '../api';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { getGameCardBackground } from '../utils/steam';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -467,9 +468,19 @@ onUnmounted(() => {
               v-for="session in sessions"
               :key="session.id"
               @click="goToSession(session.id)"
-              class="card p-5 cursor-pointer hover:border-[#c4941f] transition-all duration-150 group"
+              class="card p-5 cursor-pointer hover:border-[#c4941f] transition-all duration-150 group relative overflow-hidden"
             >
-              <div class="flex items-start justify-between">
+              <!-- Steam 背景 (右侧溶解渐隐) -->
+              <div v-if="parseFirstGameOption(session).link" 
+                   class="absolute right-0 top-0 bottom-0 w-[60%] opacity-25 pointer-events-none mix-blend-luminosity"
+                   :style="{ 
+                     ...getGameCardBackground(parseFirstGameOption(session).link),
+                     maskImage: 'radial-gradient(ellipse at center, black 10%, transparent 80%)',
+                     webkitMaskImage: 'radial-gradient(ellipse at center, black 10%, transparent 80%)'
+                   }">
+              </div>
+
+              <div class="flex items-start justify-between relative z-10">
                 <div class="flex-1">
                   <!-- 状态和时间 -->
                   <div class="mb-3 flex flex-wrap items-center gap-2">
