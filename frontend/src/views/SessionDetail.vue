@@ -80,8 +80,19 @@ const isInitiator = computed(() => {
 // 是否是管理员
 const isAdmin = computed(() => userStore.user?.isAdmin || false);
 
-// 是否可以删除活动（发起人 或 管理员）
-const canDelete = computed(() => (isInitiator.value || isAdmin.value) && session.value?.status === 'voting');
+// 是否可以删除活动
+// 投票中：发起人或管理员可删除
+// 已结算/已流局：仅管理员可删除
+const canDelete = computed(() => {
+  if (!session.value) return false;
+  const isVoting = session.value.status === 'voting';
+  if (isVoting) {
+    return isInitiator.value || isAdmin.value;
+  } else {
+    // 已结算或已流局，只有管理员能删除
+    return isAdmin.value;
+  }
+});
 
 // 是否可以投票（未投票状态且未截止）
 const canVote = computed(() => {
@@ -374,8 +385,14 @@ const fetchSession = async () => {
 
 // 删除活动
 const handleDelete = async () => {
+  const isHistory = session.value?.status !== 'voting';
+  const confirmText = isHistory
+    ? '确定要删除这条历史记录吗？此操作不可撤销，且会同时删除相关的积分记录。'
+    : '确定要删除这个活动吗？此操作不可撤销。';
+  const title = isHistory ? '删除历史记录' : '删除活动';
+
   try {
-    await ElMessageBox.confirm('确定要删除这个活动吗？此操作不可撤销。', '删除活动', {
+    await ElMessageBox.confirm(confirmText, title, {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'warning',
@@ -463,7 +480,7 @@ onUnmounted(() => {
             class="btn btn-danger"
           >
             <Icon icon="mdi:delete" class="mr-2 h-4 w-4" />
-            删除活动
+            {{ session.status === 'voting' ? '删除活动' : '删除记录' }}
           </button>
           </div>
 
