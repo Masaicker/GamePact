@@ -396,10 +396,17 @@ onMounted(() => {
           <div v-if="totalPages > 1" class="flex items-center justify-between border-t-2 border-[#6b5a45] pt-4">
             <!-- 上一页 -->
             <button
+              v-if="currentPage > 1"
               @click="prevPage"
-              :disabled="currentPage === 1"
               class="btn btn-ghost"
-              :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+            >
+              <Icon icon="mdi:chevron-left" class="mr-1 h-5 w-5" />
+              上一页
+            </button>
+            <button
+              v-else
+              disabled
+              class="btn btn-ghost opacity-50 cursor-not-allowed pointer-events-none"
             >
               <Icon icon="mdi:chevron-left" class="mr-1 h-5 w-5" />
               上一页
@@ -428,10 +435,17 @@ onMounted(() => {
 
             <!-- 下一页 -->
             <button
+              v-if="currentPage < totalPages"
               @click="nextPage"
-              :disabled="currentPage === totalPages"
               class="btn btn-ghost"
-              :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+            >
+              下一页
+              <Icon icon="mdi:chevron-right" class="ml-1 h-5 w-5" />
+            </button>
+            <button
+              v-else
+              disabled
+              class="btn btn-ghost opacity-50 cursor-not-allowed pointer-events-none"
             >
               下一页
               <Icon icon="mdi:chevron-right" class="ml-1 h-5 w-5" />

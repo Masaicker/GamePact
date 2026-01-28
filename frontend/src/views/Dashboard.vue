@@ -16,8 +16,14 @@ const historySessions = ref<any[]>([]);
 const loading = ref(false);
 
 // 历史记录分页
-const historyCurrentPage = ref(1);
+const HISTORY_PAGE_KEY = 'gamepact_history_page';
+const historyCurrentPage = ref(Number(localStorage.getItem(HISTORY_PAGE_KEY)) || 1);
 const historyPageSize = 10;
+
+// 监听页码变化，保存到 localStorage
+watch(historyCurrentPage, (newPage) => {
+  localStorage.setItem(HISTORY_PAGE_KEY, String(newPage));
+});
 
 // 历史记录总页数
 const historyTotalPages = computed(() => Math.ceil(historySessions.value.length / historyPageSize));
@@ -553,10 +559,17 @@ onUnmounted(() => {
             <div v-if="historyTotalPages > 1" class="flex items-center justify-between border-t-2 border-[#6b5a45] pt-4">
               <!-- 上一页 -->
               <button
+                v-if="historyCurrentPage > 1"
                 @click="prevHistoryPage"
-                :disabled="historyCurrentPage === 1"
                 class="btn btn-ghost"
-                :class="{ 'opacity-50 cursor-not-allowed': historyCurrentPage === 1 }"
+              >
+                <Icon icon="mdi:chevron-left" class="mr-1 h-5 w-5" />
+                上一页
+              </button>
+              <button
+                v-else
+                disabled
+                class="btn btn-ghost opacity-50 cursor-not-allowed pointer-events-none"
               >
                 <Icon icon="mdi:chevron-left" class="mr-1 h-5 w-5" />
                 上一页
@@ -583,10 +596,17 @@ onUnmounted(() => {
 
               <!-- 下一页 -->
               <button
+                v-if="historyCurrentPage < historyTotalPages"
                 @click="nextHistoryPage"
-                :disabled="historyCurrentPage === historyTotalPages"
                 class="btn btn-ghost"
-                :class="{ 'opacity-50 cursor-not-allowed': historyCurrentPage === historyTotalPages }"
+              >
+                下一页
+                <Icon icon="mdi:chevron-right" class="ml-1 h-5 w-5" />
+              </button>
+              <button
+                v-else
+                disabled
+                class="btn btn-ghost opacity-50 cursor-not-allowed pointer-events-none"
               >
                 下一页
                 <Icon icon="mdi:chevron-right" class="ml-1 h-5 w-5" />
