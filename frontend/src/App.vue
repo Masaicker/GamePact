@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, ref } from 'vue';
+import { onMounted, onUnmounted, watch, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { useUserStore } from './stores/user';
@@ -8,6 +8,19 @@ import NotificationBar from './components/NotificationBar.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
+
+// 当前时间逻辑
+const currentTime = ref('');
+let timer: number | null = null;
+
+const updateTime = () => {
+  const date = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const HH = pad(date.getHours());
+  const mm = pad(date.getMinutes());
+  const ss = pad(date.getSeconds());
+  currentTime.value = `${HH}:${mm}:${ss}`;
+};
 
 // 通知栏组件引用
 const notificationBarRef = ref<InstanceType<typeof NotificationBar> | null>(null);
@@ -71,6 +84,10 @@ watch(() => userStore.isAuthenticated, (isAuthenticated) => {
 });
 
 onMounted(async () => {
+  // 启动时钟
+  updateTime();
+  timer = window.setInterval(updateTime, 1000);
+
   if (userStore.token) {
     try {
       const { authApi } = await import('./api');
@@ -88,6 +105,12 @@ onMounted(async () => {
       notificationBarRef.value.showNotification(event.detail);
     }
   }) as EventListener);
+});
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer);
+  }
 });
 </script>
 
@@ -136,6 +159,11 @@ onMounted(async () => {
 
         <!-- 用户菜单 -->
         <div class="flex items-center space-x-3">
+          <!-- 系统时间 -->
+          <div class="hidden md:block font-mono-retro text-sm text-[#8b8178] mr-2">
+            {{ currentTime }}
+          </div>
+
           <template v-if="userStore.isAuthenticated">
             <div class="hidden md:flex items-center space-x-3 px-4 py-2 border-2 border-[#6b5a45] bg-[#1a1814]">
               <span class="font-mono-retro text-sm text-[#f5f0e6]">{{ userStore.user?.displayName }}</span>
