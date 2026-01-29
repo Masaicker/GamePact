@@ -167,15 +167,15 @@ onUnmounted(() => {
           <template v-if="userStore.isAuthenticated">
             <router-link
               :to="`/profile/${userStore.user?.id}`"
-              class="hidden md:flex items-center space-x-3 px-4 py-2 border-2 border-[#6b5a45] bg-[#1a1814] hover:border-[#c4941f] transition-colors cursor-pointer"
+              class="group hidden md:flex items-center space-x-3 px-4 py-2 border-2 border-[#6b5a45] bg-[#1a1814] hover:border-[#c4941f] transition-colors cursor-pointer"
             >
               <span class="font-mono-retro text-sm text-[#f5f0e6]">{{ userStore.user?.displayName }}</span>
               <div class="h-4 w-[2px] bg-[#6b5a45]"></div>
               <div v-if="userStore.isAdmin" class="flex items-center">
                 <span class="text-xs text-[#c4941f] font-mono-retro font-bold uppercase tracking-widest">Admin</span>
               </div>
-              <div v-else class="flex items-center space-x-2">
-                <span class="badge-primary">{{ userStore.user?.rp }}</span>
+              <div v-else class="flex items-baseline space-x-2">
+                <span class="text-sm font-mono-retro font-bold text-[#8b8178] group-hover:text-[#c4941f] transition-colors">{{ userStore.user?.rp }}</span>
                 <span class="text-xs text-[#8b8178] font-mono-retro">RP</span>
               </div>
             </router-link>
