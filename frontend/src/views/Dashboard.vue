@@ -465,12 +465,12 @@ onUnmounted(() => {
               class="card p-5 cursor-pointer hover:border-[#c4941f] transition-all duration-150 group relative overflow-hidden"
             >
               <!-- Steam 背景 (右侧溶解渐隐) -->
-              <div v-if="parseFirstGameOption(session).link" 
+              <div v-if="parseFirstGameOption(session).link"
                    class="absolute right-0 top-0 bottom-0 w-[60%] opacity-25 pointer-events-none mix-blend-luminosity"
                    :style="{ 
                      ...getGameCardBackground(parseFirstGameOption(session).link),
-                     maskImage: 'radial-gradient(ellipse at center, black 10%, transparent 80%)',
-                     webkitMaskImage: 'radial-gradient(ellipse at center, black 10%, transparent 80%)'
+                     maskImage: 'radial-gradient(ellipse at 90% 50%, black 20%, transparent 70%)',
+                     webkitMaskImage: 'radial-gradient(ellipse at 90% 50%, black 20%, transparent 70%)'
                    }">
               </div>
 
