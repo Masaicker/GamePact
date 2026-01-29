@@ -498,10 +498,10 @@ onUnmounted(() => {
         </div>
 
         <!-- 底部脚注时间条 -->
-        <div class="mt-6 pt-4 border-t border-[#2d2a26] flex flex-col items-end space-y-1 font-mono-retro text-[10px] text-[#4a4540] uppercase tracking-wider transition-all duration-150 hover:text-[#c4b8a8]">
-          <span class="block transition-all duration-150 hover:scale-110 origin-right cursor-default">Created: {{ formatTime(session.createdAt) }}</span>
-          <span v-if="session.status === 'settled' || session.status === 'cancelled'" class="block transition-all duration-150 hover:scale-110 origin-right cursor-default">
-            {{ session.status === 'settled' ? 'Settled' : 'Cancelled' }}: {{ formatTime(session.updatedAt) }}
+        <div class="mt-6 pt-4 border-t border-[#2d2a26] flex flex-col items-end space-y-1 font-mono-retro text-[10px] text-[#4a4540] uppercase tracking-wider transition-all duration-150">
+          <span class="block transition-all duration-150 hover:text-[#c4b8a8] hover:scale-110 origin-right cursor-default">CREATED: {{ formatTime(session.createdAt) }}</span>
+          <span v-if="session.status === 'settled' || session.status === 'cancelled'" class="block transition-all duration-150 hover:text-[#c4b8a8] hover:scale-110 origin-right cursor-default">
+            {{ session.status === 'settled' ? 'SETTLED' : 'CANCELLED' }}: {{ formatTime(session.updatedAt) }}
           </span>
         </div>
       </div>
