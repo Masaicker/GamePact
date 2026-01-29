@@ -4,6 +4,8 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { networkInterfaces } from 'os';
+import steamRouter from './routes/steam';
 
 // 加载环境变量
 dotenv.config();
@@ -45,10 +47,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'GamePact Backend is running' });
 });
 
-import steamRouter from './routes/steam';
-
-// ... (existing imports)
-
 // API 路由
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/sessions', require('./routes/sessions'));
@@ -82,8 +80,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // 获取本机局域网 IP
-import { networkInterfaces } from 'os';
-
 function getLocalIP() {
   const nets = networkInterfaces();
   for (const name of Object.keys(nets)) {

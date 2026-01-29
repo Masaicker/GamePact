@@ -5,7 +5,7 @@ const router = Router();
 // 简单内存缓存
 // Key: appid, Value: { data: any, timestamp: number }
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7天
 
 // 辅助函数：检测 URL 是否有效 (HEAD 请求)
 async function isValidUrl(url: string): Promise<boolean> {
@@ -78,15 +78,13 @@ router.get('/game/:appid', async (req, res) => {
 
       // 4. 写入缓存
       cache.set(appid, { data: result, timestamp: Date.now() });
-      
-      // 清理过期缓存
-      if (cache.size > 1000) {
-        for (const [key, val] of cache) {
-          if (Date.now() - val.timestamp > CACHE_DURATION) {
-            cache.delete(key);
-          }
+
+      // 5. 清理过期缓存（每次写入时都清理）
+      const now = Date.now();
+      for (const [key, val] of cache) {
+        if (now - val.timestamp > CACHE_DURATION) {
+          cache.delete(key);
         }
-        if (cache.size > 1000) cache.clear(); 
       }
 
       return res.json(result);
@@ -107,9 +105,12 @@ router.get('/game/:appid', async (req, res) => {
       page_bg: `${STEAM_CDN}/${appid}/page_bg_generated_v6b.jpg`
     };
     
-    // 可以选择缓存这个失败结果一段时间（比如 5 分钟），避免频繁重试超时请求
-    // cache.set(appid, { data: fallbackResult, timestamp: Date.now() });
-    
+    // 缓存失败结果 5 分钟，避免频繁重试超时请求
+    cache.set(appid, {
+      data: fallbackResult,
+      timestamp: Date.now() - CACHE_DURATION + 5 * 60 * 1000
+    });
+
     return res.json(fallbackResult);
   }
 });
