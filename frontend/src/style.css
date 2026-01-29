@@ -260,6 +260,14 @@ body::after {
     @apply badge bg-[#a34d1d]/10 border-[#a34d1d] text-[#a34d1d];
   }
 
+  .badge-warning {
+    @apply badge bg-[#ea580c]/10 border-[#ea580c] text-[#ea580c];
+  }
+
+  .badge-info {
+    @apply badge bg-[#06b6d4]/10 border-[#06b6d4] text-[#06b6d4];
+  }
+
   .badge-excused {
     @apply badge bg-[#eab308]/10 border-[#eab308] text-[#eab308];
   }

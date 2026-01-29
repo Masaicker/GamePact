@@ -146,43 +146,37 @@ const getDisplayStatus = (session: any) => {
   return session.status;
 };
 
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const statusMap: Record<string, string> = {
-    voting: '投票中',
-    expired: '已截止',
-    confirmed: '已成行',
-    playing: '游玩中',
-    settled: '已结算',
-    cancelled: '已流局',
-  };
-  return statusMap[status] || status;
+// 检查当前用户是否已投票
+const hasCurrentUserVoted = (session: any) => {
+  const userId = userStore.user?.id;
+  if (!userId || !session.participants) return false;
+  // 兼容不同的数据结构（有的可能只有 userId）
+  const participant = session.participants.find((p: any) => 
+    (p.user && p.user.id === userId) || p.userId === userId
+  );
+  return !!participant?.votedAt;
 };
 
-// 获取状态颜色类
-const getStatusBadgeClass = (status: string) => {
-  const map: Record<string, string> = {
-    voting: 'badge-accent',
-    expired: 'badge-secondary',
-    confirmed: 'badge-success',
-    playing: 'badge-primary',
-    settled: 'badge-success',
-    cancelled: 'badge-danger',
+// 获取状态显示信息
+const getSessionStatusInfo = (session: any) => {
+  const status = getDisplayStatus(session); // 先判断是否过期（基于时间）
+  
+  if (status === 'voting') {
+    if (hasCurrentUserVoted(session)) {
+      return { text: '已投票', class: 'badge-info', icon: 'mdi:check-circle-outline' };
+    }
+    return { text: '投票中', class: 'badge-warning', icon: 'mdi:vote' }; // 改为深橙色
+  }
+  
+  const statusMap: Record<string, any> = {
+    expired: { text: '已截止', class: 'badge-secondary', icon: 'mdi:clock-alert' },
+    confirmed: { text: '已成行', class: 'badge-success', icon: 'mdi:check-circle' },
+    playing: { text: '游玩中', class: 'badge-primary', icon: 'mdi:play' },
+    settled: { text: '已结算', class: 'badge-success', icon: 'mdi:check' },
+    cancelled: { text: '已流局', class: 'badge-danger', icon: 'mdi:alert-circle' },
   };
-  return map[status] || 'badge-secondary';
-};
-
-// 获取状态图标
-const getStatusIcon = (status: string) => {
-  const iconMap: Record<string, string> = {
-    voting: 'mdi:vote',
-    expired: 'mdi:clock-alert',
-    confirmed: 'mdi:check-circle',
-    playing: 'mdi:play',
-    settled: 'mdi:check',
-    cancelled: 'mdi:alert-circle',
-  };
-  return iconMap[status] || 'mdi:help-circle';
+  
+  return statusMap[status] || { text: status, class: 'badge-secondary', icon: 'mdi:help-circle' };
 };
 
 // 获取紧急程度颜色
@@ -484,9 +478,9 @@ onUnmounted(() => {
                 <div class="flex-1">
                   <!-- 状态和时间 -->
                   <div class="mb-3 flex flex-wrap items-center gap-2">
-                    <span class="badge" :class="getStatusBadgeClass(getDisplayStatus(session))">
-                      <Icon :icon="getStatusIcon(getDisplayStatus(session))" class="mr-1.5 h-3.5 w-3.5" />
-                      {{ getStatusText(getDisplayStatus(session)) }}
+                    <span class="badge" :class="getSessionStatusInfo(session).class">
+                      <Icon :icon="getSessionStatusInfo(session).icon" class="mr-1.5 h-3.5 w-3.5" />
+                      {{ getSessionStatusInfo(session).text }}
                     </span>
                     <span class="font-mono-retro text-xs text-[#8b8178] flex items-center">
                       <Icon icon="mdi:calendar" class="mr-1 h-3.5 w-3.5" />
@@ -522,7 +516,7 @@ onUnmounted(() => {
                       <Icon icon="mdi:account-group" class="mr-1 h-4 w-4" />
                       <span>{{ session.participants?.length || 0 }}/{{ session.minPlayers }} 玩家</span>
                     </div>
-                    <div class="flex items-center font-mono-retro" :class="getUrgencyColor(session.endVotingTime)">
+                    <div v-if="!isVotingExpired(session.endVotingTime)" class="flex items-center font-mono-retro" :class="getUrgencyColor(session.endVotingTime)">
                       <Icon icon="mdi:timer" class="mr-1 h-4 w-4" />
                       <span>{{ getTimeRemaining(session.endVotingTime) }}</span>
                     </div>

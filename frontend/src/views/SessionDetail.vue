@@ -32,44 +32,27 @@ const formatTime = (dateStr: string) => {
   return `${month}-${day} ${hours}:${minutes}`;
 };
 
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const statusMap: Record<string, string> = {
-    voting: '投票中',
-    expired: '已截止',
-    confirmed: '已成行',
-    playing: '游玩中',
-    settled: '已结算',
-    cancelled: '已流局',
+// 状态显示信息（聚合）
+const displayStatusInfo = computed(() => {
+  const status = displayStatus.value;
+  
+  if (status === 'voting') {
+    if (hasVoted.value) {
+      return { text: '已投票', class: 'badge-info', icon: 'mdi:check-circle-outline' };
+    }
+    return { text: '投票中', class: 'badge-warning', icon: 'mdi:vote' };
+  }
+  
+  const statusMap: Record<string, any> = {
+    expired: { text: '已截止', class: 'badge-secondary', icon: 'mdi:clock-alert' },
+    confirmed: { text: '已成行', class: 'badge-success', icon: 'mdi:check-circle' },
+    playing: { text: '游玩中', class: 'badge-primary', icon: 'mdi:play' },
+    settled: { text: '已结算', class: 'badge-success', icon: 'mdi:check' },
+    cancelled: { text: '已流局', class: 'badge-danger', icon: 'mdi:alert-circle' },
   };
-  return statusMap[status] || status;
-};
-
-// 获取状态徽章类
-const getStatusBadgeClass = (status: string) => {
-  const map: Record<string, string> = {
-    voting: 'badge-accent',
-    expired: 'badge-secondary',
-    confirmed: 'badge-success',
-    playing: 'badge-primary',
-    settled: 'badge-success',
-    cancelled: 'badge-danger',
-  };
-  return map[status] || 'badge-secondary';
-};
-
-// 获取状态图标
-const getStatusIcon = (status: string) => {
-  const iconMap: Record<string, string> = {
-    voting: 'mdi:vote',
-    expired: 'mdi:clock-alert',
-    confirmed: 'mdi:check-circle',
-    playing: 'mdi:play',
-    settled: 'mdi:check',
-    cancelled: 'mdi:cancel',
-  };
-  return iconMap[status] || 'mdi:help-circle';
-};
+  
+  return statusMap[status] || { text: status, class: 'badge-secondary', icon: 'mdi:help-circle' };
+});
 
 // 是否是发起人
 const isInitiator = computed(() => {
@@ -464,11 +447,10 @@ onUnmounted(() => {
                 <h1 class="title-display text-[#f5f0e6]">
                   {{ finalGameName || parsedGameOptions[0]?.name || '未定游戏' }}
                 </h1>
-                <span class="badge" :class="getStatusBadgeClass(displayStatus)">
-                  <Icon :icon="getStatusIcon(displayStatus)" class="mr-1.5 h-3.5 w-3.5" />
-                  {{ getStatusText(displayStatus) }}
-                </span>
-              </div>
+                              <span class="badge" :class="displayStatusInfo.class">
+                                <Icon :icon="displayStatusInfo.icon" class="mr-1.5 h-3.5 w-3.5" />
+                                {{ displayStatusInfo.text }}
+                              </span>              </div>
               <p class="font-mono-retro text-[#8b8178]">
                 由 {{ session.initiator?.displayName }} 发起
               </p>
