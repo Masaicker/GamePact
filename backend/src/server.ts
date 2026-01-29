@@ -45,6 +45,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'GamePact Backend is running' });
 });
 
+import steamRouter from './routes/steam';
+
+// ... (existing imports)
+
 // API 路由
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/sessions', require('./routes/sessions'));
@@ -52,6 +56,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/badges', require('./routes/badges'));
 app.use('/api/preset-games', require('./routes/presetGames'));
+app.use('/api/steam', steamRouter); // 新增 Steam 路由
 
 // Socket.io 连接处理
 io.on('connection', (socket) => {

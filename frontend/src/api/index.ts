@@ -155,4 +155,11 @@ export const adminApi = {
     api.post(`/admin/users/${userId}/reset-password`, data),
 };
 
+// ==================== Steam API ====================
+
+export const steamApi = {
+  // 获取游戏信息（包含真实图片地址）
+  getGameInfo: (appid: string) => api.get(`/steam/game/${appid}`),
+};
+
 export default api;
