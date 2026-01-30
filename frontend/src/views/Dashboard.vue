@@ -475,10 +475,10 @@ onUnmounted(() => {
               </div>
 
               <div class="flex items-start justify-between relative z-10">
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <!-- 状态和时间 -->
                   <div class="mb-3 flex flex-wrap items-center gap-2">
-                    <span class="badge" :class="getSessionStatusInfo(session).class">
+                    <span class="badge shrink-0" :class="getSessionStatusInfo(session).class">
                       <Icon :icon="getSessionStatusInfo(session).icon" class="mr-1.5 h-3.5 w-3.5" />
                       {{ getSessionStatusInfo(session).text }}
                     </span>
@@ -489,7 +489,7 @@ onUnmounted(() => {
                   </div>
 
                   <!-- 游戏名称 -->
-                  <h3 class="mb-3 title-subsection group-hover:text-[#c4941f] transition-colors">
+                  <h3 class="mb-3 title-subsection group-hover:text-[#c4941f] transition-colors break-words">
                     <template v-if="parseFirstGameOption(session).link">
                       <a
                         :href="parseFirstGameOption(session).link"
@@ -555,7 +555,7 @@ onUnmounted(() => {
                 @click="goToSession(session.id)"
                 class="card p-4 cursor-pointer hover:border-[#c4941f] transition-all duration-150 group"
               >
-                <p class="font-mono-retro text-sm text-[#c4b8a8] leading-relaxed group-hover:text-[#f5f0e6] transition-colors" v-html="formatHistoryRecord(session)">
+                <p class="font-mono-retro text-sm text-[#c4b8a8] leading-relaxed group-hover:text-[#f5f0e6] transition-colors break-words" v-html="formatHistoryRecord(session)">
                 </p>
               </div>
             </div>

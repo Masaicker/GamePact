@@ -442,15 +442,18 @@ onUnmounted(() => {
 
         <div class="relative z-10">
           <div class="flex items-start justify-between mb-6">
-            <div class="flex-1">
-              <div class="flex items-center gap-3 mb-3">
-                <h1 class="title-display text-[#f5f0e6]">
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-col gap-2 mb-3">
+                <h1 class="title-display text-[#f5f0e6] break-words">
                   {{ finalGameName || parsedGameOptions[0]?.name || '未定游戏' }}
                 </h1>
-                              <span class="badge" :class="displayStatusInfo.class">
+                <div class="flex items-center gap-3">
+                              <span class="badge shrink-0" :class="displayStatusInfo.class">
                                 <Icon :icon="displayStatusInfo.icon" class="mr-1.5 h-3.5 w-3.5" />
                                 {{ displayStatusInfo.text }}
-                              </span>              </div>
+                              </span>
+                </div>
+              </div>
               <p class="font-mono-retro text-[#8b8178]">
                 由 {{ session.initiator?.displayName }} 发起
               </p>
@@ -590,7 +593,7 @@ onUnmounted(() => {
                         #{{ index + 1 }}
                       </span>
                     </div>
-                    <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
+                    <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight break-words">
                       <a
                         :href="parsedGameOptions[index].link"
                         target="_blank"
@@ -602,7 +605,7 @@ onUnmounted(() => {
                         <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
                       </a>
                     </h4>
-                    <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
+                    <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight break-words">{{ game.name }}</h4>
                   </div>
 
                   <!-- 纵向进度条容器 -->
@@ -710,7 +713,7 @@ onUnmounted(() => {
           <div v-else-if="hasVoted">
             <div class="mb-6 border-2 border-[#6b9b7a] bg-[#6b9b7a]/10 p-4 text-center">
               <Icon icon="mdi:check-circle" class="mr-2 h-5 w-5 text-[#6b9b7a]" />
-              <span class="font-mono-retro text-[#6b9b7a]">您已投票：
+              <span class="font-mono-retro text-[#6b9b7a] break-words">您已投票：
                 <a
                   v-if="parsedGameOptions[getUserVote]?.link"
                   :href="parsedGameOptions[getUserVote].link"
@@ -744,7 +747,7 @@ onUnmounted(() => {
                         <Icon v-if="getUserVote === index" icon="mdi:check" class="ml-1 h-3 w-3 inline" />
                       </span>
                     </div>
-                    <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight">
+                    <h4 v-if="parsedGameOptions[index]?.link" class="font-bold text-sm leading-tight break-words">
                       <a
                         :href="parsedGameOptions[index].link"
                         target="_blank"
@@ -756,7 +759,7 @@ onUnmounted(() => {
                         <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
                       </a>
                     </h4>
-                    <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ game.name }}</h4>
+                    <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight break-words">{{ game.name }}</h4>
                   </div>
 
                   <!-- 纵向进度条容器 -->
@@ -853,7 +856,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="text-right">
-              <div v-if="finalGameName && parsedGameOptions.find(o => o.name === finalGameName)?.link" class="title-display">
+              <div v-if="finalGameName && parsedGameOptions.find(o => o.name === finalGameName)?.link" class="title-display break-words">
                 <a
                   :href="parsedGameOptions.find(o => o.name === finalGameName)!.link"
                   target="_blank"
@@ -865,7 +868,7 @@ onUnmounted(() => {
                   <Icon icon="mdi:open-in-new" class="h-4 w-4 inline ml-1" />
                 </a>
               </div>
-              <div v-else class="title-display text-[#f5f0e6]">{{ finalGameName }}</div>
+              <div v-else class="title-display text-[#f5f0e6] break-words">{{ finalGameName }}</div>
               <div class="font-mono-retro text-xs uppercase" :class="session.status === 'settled' ? 'text-[#6b9b7a]' : 'text-[#a34d1d]'">
                 {{ session.status === 'settled' ? '成功' : '流局' }}
               </div>
@@ -900,7 +903,7 @@ onUnmounted(() => {
                     #{{ index + 1 }}
                   </span>
                 </div>
-                <h4 v-if="parsedGameOptions[result.gameIndex]?.link" class="font-bold text-sm leading-tight">
+                <h4 v-if="parsedGameOptions[result.gameIndex]?.link" class="font-bold text-sm leading-tight break-words">
                   <a
                     :href="parsedGameOptions[result.gameIndex].link"
                     target="_blank"
@@ -912,7 +915,7 @@ onUnmounted(() => {
                     <Icon icon="mdi:open-in-new" class="h-3 w-3 inline ml-1" />
                   </a>
                 </h4>
-                <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight">{{ result.gameName }}</h4>
+                <h4 v-else class="font-bold text-[#f5f0e6] text-sm leading-tight break-words">{{ result.gameName }}</h4>
               </div>
 
               <!-- 纵向进度条容器 -->

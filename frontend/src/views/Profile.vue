@@ -372,19 +372,19 @@ onMounted(() => {
               :key="record.id"
               class="flex items-center justify-between rounded border border-[#6b5a45] bg-[#1a1814] p-4 hover:border-[#c4941f] transition-all"
             >
-              <div class="flex items-center space-x-4">
-                <div class="flex h-10 w-10 items-center justify-center rounded border-2 border-[#6b5a45] bg-[#242220]">
+              <div class="flex items-center space-x-4 flex-1 min-w-0">
+                <div class="flex h-10 w-10 items-center justify-center rounded border-2 border-[#6b5a45] bg-[#242220] shrink-0">
                   <Icon :icon="getScoreIcon(record.reason)" class="h-5 w-5" :class="getScoreColor(record.scoreChange, record.reason)" />
                 </div>
-                <div>
-                  <div class="font-medium text-[#f5f0e6]">{{ record.description }}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-[#f5f0e6] break-words">{{ record.description }}</div>
                   <div class="font-mono-retro text-xs text-[#8b8178] flex items-center">
                     <Icon icon="mdi:calendar" class="mr-1 h-3 w-3" />
                     {{ formatTime(record.createdAt) }}
                   </div>
                 </div>
               </div>
-              <div class="text-right">
+              <div class="text-right shrink-0 ml-4">
                 <div class="font-mono-retro text-xl font-bold" :class="getScoreColor(record.scoreChange, record.reason)">
                   {{ getScoreText(record.scoreChange) }}
                 </div>

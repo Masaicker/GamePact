@@ -12,7 +12,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "tsx src/seed.ts",
-    "seed:badges": "tsx src/seedBadges.ts"
+    "seed:badges": "tsx src/seedBadges.ts",
+    "reset-admin": "tsx scripts/reset-admin-password.ts"
   },
   "keywords": [
     "gamepact",
