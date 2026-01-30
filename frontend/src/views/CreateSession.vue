@@ -192,8 +192,19 @@ const toggleLinkInput = (index: number) => {
 
 // 拖拽排序相关
 const draggedIndex = ref<number | null>(null);
+const allowDrag = ref(true);
 
-const onDragStart = (index: number) => {
+const onMouseDown = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  // 如果点击的是输入框或交互元素，临时禁用拖拽
+  if (['INPUT', 'TEXTAREA', 'BUTTON', 'A'].includes(target.tagName) || target.closest('button') || target.closest('a') || target.closest('.input-field')) {
+    allowDrag.value = false;
+  } else {
+    allowDrag.value = true;
+  }
+};
+
+const onDragStart = (e: DragEvent, index: number) => {
   draggedIndex.value = index;
 };
 
@@ -327,8 +338,9 @@ onMounted(() => {
               <div
                 v-for="(option, index) in gameOptions"
                 :key="index"
-                :draggable="gameOptions.length > 1"
-                @dragstart="onDragStart(index)"
+                :draggable="gameOptions.length > 1 && allowDrag"
+                @mousedown="onMouseDown"
+                @dragstart="onDragStart($event, index)"
                 @dragover="onDragOver($event, index)"
                 @dragend="onDragEnd"
                 class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4"
