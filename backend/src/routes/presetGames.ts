@@ -30,7 +30,19 @@ router.get('/', async (req: Request, res: Response) => {
       },
     });
 
-    res.json(games);
+    // 解析 images 字段
+    const parsedGames = games.map(game => {
+      try {
+        return {
+          ...game,
+          images: game.images ? JSON.parse(game.images) : undefined
+        };
+      } catch (e) {
+        return { ...game, images: undefined };
+      }
+    });
+
+    res.json(parsedGames);
   } catch (error) {
     console.error('获取预设游戏列表错误:', error);
     res.status(500).json({ error: '获取预设游戏列表失败' });
@@ -49,7 +61,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(403).json({ error: '只有管理员可以创建预设游戏' });
     }
 
-    const { name, link } = req.body;
+    const { name, link, images } = req.body;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ error: '游戏名称不能为空' });
@@ -59,10 +71,14 @@ router.post('/', async (req: Request, res: Response) => {
       data: {
         name: name.trim(),
         link: link?.trim() || null,
+        images: images ? JSON.stringify(images) : null,
       },
     });
 
-    res.status(201).json(game);
+    res.status(201).json({
+      ...game,
+      images: game.images ? JSON.parse(game.images) : undefined
+    });
   } catch (error) {
     console.error('创建预设游戏错误:', error);
     res.status(500).json({ error: '创建预设游戏失败' });
@@ -82,7 +98,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
-    const { name, link } = req.body;
+    const { name, link, images } = req.body;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ error: '游戏名称不能为空' });
@@ -93,10 +109,14 @@ router.put('/:id', async (req: Request, res: Response) => {
       data: {
         name: name.trim(),
         link: link?.trim() || null,
+        images: images ? JSON.stringify(images) : null,
       },
     });
 
-    res.json(game);
+    res.json({
+      ...game,
+      images: game.images ? JSON.parse(game.images) : undefined
+    });
   } catch (error) {
     console.error('修改预设游戏错误:', error);
     res.status(500).json({ error: '修改预设游戏失败' });
@@ -156,12 +176,18 @@ router.post('/import', async (req: Request, res: Response) => {
           continue;
         }
 
-        const created = await prisma.presetGame.create({
-          data: {
-            name: game.name.trim(),
-            link: game.link?.trim() || null,
-          },
-        });
+          // 简单的 Steam Link 检测
+          const link = game.link?.trim() || null;
+          const isSteam = link && /store\.steampowered\.com\/app\/\d+/.test(link);
+          
+          await prisma.presetGame.create({
+            data: {
+              name: game.name.trim(),
+              link: link,
+              // 如果是 Steam 游戏，强制清除 images，防止影子数据
+              images: (!isSteam && game.images) ? JSON.stringify(game.images) : null,
+            },
+          });
 
         results.push(created);
       } catch (error) {

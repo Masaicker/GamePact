@@ -135,20 +135,19 @@ const addPresetGame = (game: any) => {
     opt => !opt.name?.trim() && !opt.link?.trim()
   );
 
+  const newOption = {
+    name: game.name,
+    link: game.link || '',
+    showLinkInput: false,
+    images: game.images || undefined,
+  };
+
   if (emptyIndex !== -1) {
     // 复用空对象
-    gameOptions.value[emptyIndex] = {
-      name: game.name,
-      link: game.link || '',
-      showLinkInput: false,
-    };
+    gameOptions.value[emptyIndex] = newOption;
   } else {
     // 创建新对象
-    gameOptions.value.push({
-      name: game.name,
-      link: game.link || '',
-      showLinkInput: false,
-    });
+    gameOptions.value.push(newOption);
   }
 
   // 不关闭弹窗，方便连续添加

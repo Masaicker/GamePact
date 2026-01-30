@@ -353,12 +353,22 @@
         </div>
         <div class="mb-4">
           <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏链接（可选）</label>
-          <input
-            v-model="newGameLink"
-            type="url"
-            class="input-field"
-            placeholder="> https://store.steampowered.com/app/..."
-          />
+          <div class="flex items-center gap-2">
+            <input
+              v-model="newGameLink"
+              type="url"
+              class="input-field"
+              placeholder="> https://store.steampowered.com/app/..."
+            />
+            <button
+              v-if="!extractSteamAppId(newGameLink)"
+              @click="openImageDialog('new')"
+              class="btn btn-ghost px-2"
+              title="手动添加图片"
+            >
+              <Icon icon="mdi:image-plus" class="h-6 w-6" :class="{'text-[#c4941f]': newGameImages.length > 0}" />
+            </button>
+          </div>
         </div>
         <button
           @click="createPresetGame"
@@ -477,11 +487,21 @@
             </div>
             <div class="mb-6">
               <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏链接（可选）</label>
-              <input
-                v-model="editingGame.link"
-                type="url"
-                class="input-field"
-              />
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="editingGame.link"
+                  type="url"
+                  class="input-field"
+                />
+                <button
+                  v-if="!extractSteamAppId(editingGame.link)"
+                  @click="openImageDialog('edit')"
+                  class="btn btn-ghost px-2"
+                  title="手动添加图片"
+                >
+                  <Icon icon="mdi:image-plus" class="h-6 w-6" :class="{'text-[#c4941f]': editingGame.images && editingGame.images.length > 0}" />
+                </button>
+              </div>
             </div>
             <div class="flex justify-end space-x-3">
               <button
@@ -496,6 +516,55 @@
                 class="btn btn-primary"
               >
                 {{ updatingGame ? '保存中...' : '保存' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </teleport>
+
+      <!-- 手动添加图片对话框 -->
+      <teleport to="body">
+        <div v-if="showImageDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div class="card w-full max-w-lg p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="title-subsection text-[#f5f0e6]">手动添加游戏图片</h3>
+              <button @click="showImageDialog = false" class="btn btn-ghost">
+                <Icon icon="mdi:close" class="h-5 w-5" />
+              </button>
+            </div>
+
+            <div class="mb-6 space-y-4">
+              <p class="font-mono-retro text-sm text-[#8b8178]">
+                > 请输入图片的直接链接（URL）。
+              </p>
+
+              <div v-for="(field, index) in imageInputs" :key="index">
+                <label class="mb-1 block font-mono-retro text-sm text-[#c4b8a8]">
+                  {{ field.label }}
+                </label>
+                <input
+                  v-model="tempImageUrls[index]"
+                  type="url"
+                  class="input-field"
+                  placeholder="> https://example.com/image.jpg"
+                />
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4 border-t-2 border-[#6b5a45]">
+              <button
+                type="button"
+                @click="showImageDialog = false"
+                class="btn btn-ghost"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                @click="saveImages"
+                class="btn btn-primary"
+              >
+                确认保存
               </button>
             </div>
           </div>
@@ -703,6 +772,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { Icon } from '@iconify/vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi, authApi } from '../api';
+import { extractSteamAppId } from '../utils/steam';
 
 const activeTab = ref<'invites' | 'users' | 'audit' | 'backup' | 'games'>(
   (localStorage.getItem('adminTab') as any) || 'invites'
@@ -1288,9 +1358,63 @@ watch([showEditGameDialog, showScoreDialog, showHistoryDialog, showSelfPasswordD
   const isAnyOpen = values.some(v => v);
   document.body.style.overflow = isAnyOpen ? 'hidden' : '';
 });
-const editingGame = ref({ id: '', name: '', link: '' });
+const editingGame = ref({ id: '', name: '', link: '', images: undefined as string[] | undefined });
 const updatingGame = ref(false);
 const importFileInput = ref<HTMLInputElement | null>(null);
+
+// ==================== 手动图片逻辑 ====================
+const showImageDialog = ref(false);
+const imageDialogContext = ref<'new' | 'edit'>('new');
+const tempImageUrls = ref<string[]>(['', '', '']);
+const newGameImages = ref<string[]>([]);
+
+const imageInputs = [
+  { label: '活动列表卡片 (横图)' },
+  { label: '投票选项封面 (竖图)' },
+  { label: '详情页顶部背景 (大图)' }
+];
+
+const openImageDialog = (context: 'new' | 'edit') => {
+  imageDialogContext.value = context;
+  
+  if (context === 'new') {
+    if (newGameLink.value && extractSteamAppId(newGameLink.value)) {
+       ElMessage.info('Steam 游戏会自动获取图片，无需手动添加');
+       return;
+    }
+    const existing = newGameImages.value || [];
+    tempImageUrls.value = [existing[0] || '', existing[1] || '', existing[2] || ''];
+  } else {
+    if (editingGame.value.link && extractSteamAppId(editingGame.value.link)) {
+       ElMessage.info('Steam 游戏会自动获取图片，无需手动添加');
+       return;
+    }
+    const existing = editingGame.value.images || [];
+    tempImageUrls.value = [existing[0] || '', existing[1] || '', existing[2] || ''];
+  }
+  showImageDialog.value = true;
+};
+
+const saveImages = () => {
+  const urls = tempImageUrls.value.filter(url => url && url.trim());
+  
+  // 校验 URL 格式
+  const urlPattern = /^https?:\/\/.+/i;
+  for (const url of urls) {
+    if (!urlPattern.test(url)) {
+      ElMessage.error('图片链接格式不正确，必须以 http:// 或 https:// 开头');
+      return;
+    }
+  }
+
+  if (imageDialogContext.value === 'new') {
+    newGameImages.value = urls.length > 0 ? urls : [];
+  } else {
+    editingGame.value.images = urls.length > 0 ? urls : undefined;
+  }
+  ElMessage.success(urls.length > 0 ? '已保存图片链接' : '已清除图片链接');
+  showImageDialog.value = false;
+};
 
 // 获取 Token
 const getToken = () => localStorage.getItem('token');
@@ -1333,6 +1457,11 @@ const createPresetGame = async () => {
     return;
   }
 
+  // 如果检测到 Steam ID，强制忽略 images
+  const trimmedLink = newGameLink.value.trim() || null;
+  const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
+  const finalImages = (!isSteam && newGameImages.value && newGameImages.value.length > 0) ? newGameImages.value : undefined;
+
   creatingGame.value = true;
   try {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games`, {
@@ -1343,7 +1472,8 @@ const createPresetGame = async () => {
       },
       body: JSON.stringify({
         name: newGameName.value.trim(),
-        link: newGameLink.value.trim() || null,
+        link: trimmedLink,
+        images: finalImages,
       }),
     });
 
@@ -1351,6 +1481,7 @@ const createPresetGame = async () => {
       ElMessage.success('游戏添加成功');
       newGameName.value = '';
       newGameLink.value = '';
+      newGameImages.value = []; // 清空图片
       await loadPresetGames();
     } else {
       const error = await response.json();
@@ -1376,6 +1507,11 @@ const updatePresetGame = async () => {
     return;
   }
 
+  // 清洗逻辑
+  const trimmedLink = editingGame.value.link?.trim() || null;
+  const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
+  const finalImages = (!isSteam && editingGame.value.images && editingGame.value.images.length > 0) ? editingGame.value.images : undefined;
+
   updatingGame.value = true;
   try {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games/${editingGame.value.id}`, {
@@ -1386,7 +1522,8 @@ const updatePresetGame = async () => {
       },
       body: JSON.stringify({
         name: editingGame.value.name.trim(),
-        link: editingGame.value.link?.trim() || null,
+        link: trimmedLink,
+        images: finalImages,
       }),
     });
 

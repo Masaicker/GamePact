@@ -163,6 +163,7 @@ model PresetGame {
   id        String   @id @default(uuid())
   name      String                      // 游戏名称
   link      String?                     // 游戏链接（可选）
+  images    String?                     // JSON: 手动图片列表
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
