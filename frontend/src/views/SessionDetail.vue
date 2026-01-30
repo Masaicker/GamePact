@@ -281,6 +281,7 @@ const handleExcuse = async () => {
       cancelButtonText: '取消',
       inputPlaceholder: '临时有事',
       inputPattern: /.*/,
+      closeOnClickModal: false,
     });
   } catch {
     return;
@@ -338,6 +339,7 @@ const handleSettle = async () => {
             confirmButtonText: '确认流局',
             cancelButtonText: '取消',
             type: 'warning',
+            closeOnClickModal: false,
           }
         );
 
@@ -399,6 +401,7 @@ const handleDelete = async () => {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'warning',
+      closeOnClickModal: false,
     });
 
     // 先移除事件监听器，防止后续通知触发刷新

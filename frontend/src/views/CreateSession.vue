@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { extractSteamAppId } from '../utils/steam';
@@ -38,6 +38,14 @@ const presetGameSearch = ref('');
 const loadingPresetGames = ref(false);
 const showPresetGameDialog = ref(false);
 const showImageDialog = ref(false);
+
+// 监听弹窗显示，锁定滚动
+watch(showPresetGameDialog, (val) => {
+  document.body.style.overflow = val ? 'hidden' : '';
+});
+watch(showImageDialog, (val) => {
+  document.body.style.overflow = val ? 'hidden' : '';
+});
 const currentImageOptionIndex = ref(-1);
 const tempImageUrls = ref<string[]>(['', '', '']);
 

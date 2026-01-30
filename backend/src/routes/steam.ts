@@ -3,7 +3,7 @@ import { Router } from 'express';
 const router = Router();
 
 const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
-const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7天
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时
 
 // 兜底数据常量（前后端复用）
 const getDefaultImages = (appid: string) => ({

@@ -292,6 +292,10 @@ const formatHistoryRecord = (session: any): string => {
 
 // 修改密码相关
 const showPasswordDialog = ref(false);
+// 监听弹窗显示，锁定滚动
+watch(showPasswordDialog, (val) => {
+  document.body.style.overflow = val ? 'hidden' : '';
+});
 const showOldPassword = ref(false);
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);

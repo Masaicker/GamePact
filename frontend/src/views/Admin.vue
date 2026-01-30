@@ -556,61 +556,64 @@
     <!-- 积分历史对话框 -->
     <teleport to="body">
       <div v-if="showHistoryDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="title-subsection text-[#f5f0e6]">积分历史</h3>
-            <button @click="showHistoryDialog = false" class="btn btn-ghost">
-              <Icon icon="mdi:close" class="h-5 w-5" />
-            </button>
-          </div>
-
-          <div class="mb-4">
+        <div class="card w-full max-w-2xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
+          <!-- Fixed Header -->
+          <div class="p-6 border-b-2 border-[#6b5a45] shrink-0 bg-[#1a1814]">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="title-subsection text-[#f5f0e6]">积分历史</h3>
+              <button @click="showHistoryDialog = false" class="btn btn-ghost">
+                <Icon icon="mdi:close" class="h-5 w-5" />
+              </button>
+            </div>
             <p class="text-[#c4b8a8]">
               用户: <span class="font-medium text-[#f5f0e6]">{{ selectedUser?.displayName }}</span>
             </p>
           </div>
 
-          <div v-if="loadingHistory" class="py-8 text-center font-mono-retro text-[#8b8178]">
-            > 加载中...
-          </div>
+          <!-- Scrollable Content -->
+          <div class="p-6 overflow-y-auto flex-1">
+            <div v-if="loadingHistory" class="py-8 text-center font-mono-retro text-[#8b8178]">
+              > 加载中...
+            </div>
 
-          <div v-else-if="historyRecords.length === 0" class="py-8 text-center font-mono-retro text-[#6b5a45]">
-            > 暂无积分记录
-          </div>
+            <div v-else-if="historyRecords.length === 0" class="py-8 text-center font-mono-retro text-[#6b5a45]">
+              > 暂无积分记录
+            </div>
 
-          <div v-else class="space-y-2">
-            <div
-              v-for="record in historyRecords"
-              :key="record.id"
-              class="flex items-center justify-between border-2 px-4 py-2"
-              :class="record.isDeleted ? 'border-[#2d2a26] bg-[#2d2a26]/50 opacity-60' : 'border-[#6b5a45] bg-[#1a1814]'"
-            >
-              <div class="flex-1" :class="{ 'line-through': record.isDeleted }">
-                <div class="flex items-center space-x-2">
-                  <Icon
-                    :icon="getHistoryIcon(record.reason)"
-                    class="h-4 w-4"
-                    :class="getHistoryIconColor(record.scoreChange, record.reason)"
-                  />
-                  <span class="font-mono-retro text-sm" :class="record.scoreChange > 0 ? 'text-[#6b9b7a]' : 'text-[#a34d1d]'">
-                    {{ record.scoreChange > 0 ? '+' : '' }}{{ record.scoreChange }}
-                  </span>
-                  <span class="font-mono-retro text-xs text-[#8b8178]">{{ formatDate(record.createdAt) }}</span>
-                  <span v-if="record.isDeleted" class="badge badge-secondary">
-                    已作废
-                  </span>
+            <div v-else class="space-y-2">
+              <div
+                v-for="record in historyRecords"
+                :key="record.id"
+                class="flex items-center justify-between border-2 px-4 py-2"
+                :class="record.isDeleted ? 'border-[#2d2a26] bg-[#2d2a26]/50 opacity-60' : 'border-[#6b5a45] bg-[#1a1814]'"
+              >
+                <div class="flex-1" :class="{ 'line-through': record.isDeleted }">
+                  <div class="flex items-center space-x-2">
+                    <Icon
+                      :icon="getHistoryIcon(record.reason)"
+                      class="h-4 w-4"
+                      :class="getHistoryIconColor(record.scoreChange, record.reason)"
+                    />
+                    <span class="font-mono-retro text-sm" :class="record.scoreChange > 0 ? 'text-[#6b9b7a]' : 'text-[#a34d1d]'">
+                      {{ record.scoreChange > 0 ? '+' : '' }}{{ record.scoreChange }}
+                    </span>
+                    <span class="font-mono-retro text-xs text-[#8b8178]">{{ formatDate(record.createdAt) }}</span>
+                    <span v-if="record.isDeleted" class="badge badge-secondary">
+                      已作废
+                    </span>
+                  </div>
+                  <div class="text-sm text-[#c4b8a8]">{{ record.description }}</div>
                 </div>
-                <div class="text-sm text-[#c4b8a8]">{{ record.description }}</div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button
-                  v-if="!record.isDeleted && record.reason === 'admin_adjust'"
-                  @click="deleteScoreHistory(record.id)"
-                  class="btn btn-danger"
-                  title="删除记录"
-                >
-                  <Icon icon="mdi:delete" class="h-4 w-4" />
-                </button>
+                <div class="flex items-center space-x-2">
+                  <button
+                    v-if="!record.isDeleted && record.reason === 'admin_adjust'"
+                    @click="deleteScoreHistory(record.id)"
+                    class="btn btn-danger"
+                    title="删除记录"
+                  >
+                    <Icon icon="mdi:delete" class="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -827,6 +830,7 @@ const deleteInvite = async (id: string) => {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
+      closeOnClickModal: false,
     });
 
     await adminApi.deleteInvite(id);
@@ -1000,6 +1004,7 @@ const deleteScoreHistory = async (recordId: string) => {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
+      closeOnClickModal: false,
     });
 
     await adminApi.deleteScoreHistory(recordId);
@@ -1025,6 +1030,7 @@ const deleteUser = async (user: any) => {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',
+        closeOnClickModal: false,
       }
     );
 
@@ -1068,6 +1074,7 @@ const resetUserPassword = async (user: any) => {
           }
           return true;
         },
+        closeOnClickModal: false,
       }
     );
 
@@ -1275,6 +1282,12 @@ const newGameName = ref('');
 const newGameLink = ref('');
 const creatingGame = ref(false);
 const showEditGameDialog = ref(false);
+
+// 监听弹窗显示，锁定滚动
+watch([showEditGameDialog, showScoreDialog, showHistoryDialog, showSelfPasswordDialog], (values) => {
+  const isAnyOpen = values.some(v => v);
+  document.body.style.overflow = isAnyOpen ? 'hidden' : '';
+});
 const editingGame = ref({ id: '', name: '', link: '' });
 const updatingGame = ref(false);
 const importFileInput = ref<HTMLInputElement | null>(null);
@@ -1399,6 +1412,7 @@ const deletePresetGame = async (id: string) => {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
+      closeOnClickModal: false,
     });
 
     const response = await fetch(`${import.meta.env.VITE_API_URL}/preset-games/${id}`, {
