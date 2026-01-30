@@ -372,7 +372,7 @@
         </div>
         <button
           @click="createPresetGame"
-          :disabled="creatingGame || !newGameName.trim()"
+          :disabled="creatingGame"
           class="btn btn-primary"
         >
           <Icon v-if="creatingGame" icon="mdi:loading" class="mr-2 h-5 w-5 animate-spin" />
@@ -512,7 +512,7 @@
               </button>
               <button
                 @click="updatePresetGame"
-                :disabled="updatingGame || !editingGame.name.trim()"
+                :disabled="updatingGame"
                 class="btn btn-primary"
               >
                 {{ updatingGame ? '保存中...' : '保存' }}
