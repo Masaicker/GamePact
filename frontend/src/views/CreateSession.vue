@@ -170,9 +170,47 @@ const removeGameOption = (index: number) => {
   }
 };
 
+// 判断游戏选项是否有内容
+const hasGameOptionContent = (option: GameOption) => {
+  return !!(option.name?.trim() || option.link?.trim() || option.images?.length);
+};
+
+// 清空游戏选项
+const clearGameOption = (index: number) => {
+  gameOptions.value[index] = {
+    name: '',
+    link: '',
+    showLinkInput: false,
+    images: undefined
+  };
+};
+
 // 切换链接输入显示
 const toggleLinkInput = (index: number) => {
   gameOptions.value[index].showLinkInput = !gameOptions.value[index].showLinkInput;
+};
+
+// 拖拽排序相关
+const draggedIndex = ref<number | null>(null);
+
+const onDragStart = (index: number) => {
+  draggedIndex.value = index;
+};
+
+const onDragOver = (e: DragEvent, index: number) => {
+  e.preventDefault();
+  if (draggedIndex.value === null || draggedIndex.value === index) return;
+  
+  // 交换位置
+  const newOptions = [...gameOptions.value];
+  const [removed] = newOptions.splice(draggedIndex.value, 1);
+  newOptions.splice(index, 0, removed);
+  gameOptions.value = newOptions;
+  draggedIndex.value = index;
+};
+
+const onDragEnd = () => {
+  draggedIndex.value = null;
 };
 
 // 提交创建
@@ -274,9 +312,21 @@ onMounted(() => {
               <span class="text-[#6b5a45]">（至少一个）</span>
             </label>
             <div class="space-y-3">
-              <div v-for="(option, index) in gameOptions" :key="index" class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4">
+              <div
+                v-for="(option, index) in gameOptions"
+                :key="index"
+                :draggable="gameOptions.length > 1"
+                @dragstart="onDragStart(index)"
+                @dragover="onDragOver($event, index)"
+                @dragend="onDragEnd"
+                class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4"
+                :class="{'opacity-50': draggedIndex === index, 'border-dashed border-[#c4941f]': draggedIndex !== null && draggedIndex !== index}"
+              >
                 <!-- 游戏名称行 -->
                 <div class="flex items-center gap-3 mb-3">
+                  <div v-if="gameOptions.length > 1" class="cursor-grab active:cursor-grabbing text-[#8b8178] hover:text-[#c4941f]">
+                    <Icon icon="mdi:drag-vertical" class="h-5 w-5" />
+                  </div>
                   <div class="flex-1">
                     <input
                       v-model="option.name"
@@ -303,6 +353,17 @@ onMounted(() => {
                   >
                     <Icon icon="mdi:image-plus" class="h-5 w-5" :class="{'text-[#c4941f]': option.images?.length}" />
                   </button>
+                  <!-- 单选项有内容时显示清空按钮 -->
+                  <button
+                    v-if="gameOptions.length === 1 && hasGameOptionContent(option)"
+                    type="button"
+                    @click="clearGameOption(index)"
+                    class="btn btn-danger"
+                    title="清空内容"
+                  >
+                    <Icon icon="mdi:eraser" class="h-5 w-5" />
+                  </button>
+                  <!-- 多选项时显示删除按钮 -->
                   <button
                     v-if="gameOptions.length > 1"
                     type="button"
