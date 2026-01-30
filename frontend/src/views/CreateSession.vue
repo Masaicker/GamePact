@@ -42,6 +42,10 @@ const showImageDialog = ref(false);
 // 监听弹窗显示，锁定滚动
 watch(showPresetGameDialog, (val) => {
   document.body.style.overflow = val ? 'hidden' : '';
+  // 关闭弹窗时清空搜索
+  if (!val) {
+    presetGameSearch.value = '';
+  }
 });
 watch(showImageDialog, (val) => {
   document.body.style.overflow = val ? 'hidden' : '';
@@ -295,7 +299,7 @@ onMounted(() => {
                     type="button"
                     @click="openImageDialog(index)"
                     class="btn btn-ghost px-2"
-                    title="手动添加图片"
+                    title="（可选）手动添加图片"
                   >
                     <Icon icon="mdi:image-plus" class="h-5 w-5" :class="{'text-[#c4941f]': option.images?.length}" />
                   </button>
@@ -491,7 +495,7 @@ onMounted(() => {
       <div v-if="showImageDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
         <div class="card w-full max-w-lg p-6">
           <div class="mb-4 flex items-center justify-between">
-            <h3 class="title-subsection text-[#f5f0e6]">手动添加游戏图片</h3>
+            <h3 class="title-subsection text-[#f5f0e6]">（可选）手动添加游戏图片</h3>
             <button @click="showImageDialog = false" class="btn btn-ghost">
               <Icon icon="mdi:close" class="h-5 w-5" />
             </button>

@@ -364,7 +364,7 @@
               v-if="!extractSteamAppId(newGameLink)"
               @click="openImageDialog('new')"
               class="btn btn-ghost px-2"
-              title="手动添加图片"
+              title="（可选）手动添加图片"
             >
               <Icon icon="mdi:image-plus" class="h-6 w-6" :class="{'text-[#c4941f]': newGameImages.length > 0}" />
             </button>
@@ -497,7 +497,7 @@
                   v-if="!extractSteamAppId(editingGame.link)"
                   @click="openImageDialog('edit')"
                   class="btn btn-ghost px-2"
-                  title="手动添加图片"
+                  title="（可选）手动添加图片"
                 >
                   <Icon icon="mdi:image-plus" class="h-6 w-6" :class="{'text-[#c4941f]': editingGame.images && editingGame.images.length > 0}" />
                 </button>
@@ -527,7 +527,7 @@
         <div v-if="showImageDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div class="card w-full max-w-lg p-6">
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="title-subsection text-[#f5f0e6]">手动添加游戏图片</h3>
+              <h3 class="title-subsection text-[#f5f0e6]">（可选）手动添加游戏图片</h3>
               <button @click="showImageDialog = false" class="btn btn-ghost">
                 <Icon icon="mdi:close" class="h-5 w-5" />
               </button>
@@ -781,6 +781,8 @@ const activeTab = ref<'invites' | 'users' | 'audit' | 'backup' | 'games'>(
 // 监听标签切换，持久化状态并自动加载数据
 watch(activeTab, (newTab) => {
   localStorage.setItem('adminTab', newTab);
+  // 切换标签时清空搜索框
+  gameSearchQuery.value = '';
   if (newTab === 'users' && users.value.length === 0) {
     loadUsers();
   } else if (newTab === 'audit' && auditLogs.value.length === 0) {
