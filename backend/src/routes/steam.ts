@@ -2,10 +2,30 @@ import { Router } from 'express';
 
 const router = Router();
 
-// 简单内存缓存
-// Key: appid, Value: { data: any, timestamp: number }
-const cache = new Map<string, { data: any; timestamp: number }>();
+const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7天
+
+// 兜底数据常量（前后端复用）
+const getDefaultImages = (appid: string) => ({
+  header: `${STEAM_CDN}/${appid}/header.jpg`,
+  hero: `${STEAM_CDN}/${appid}/library_hero.jpg`,
+  portrait: `${STEAM_CDN}/${appid}/library_600x900.jpg`,
+  page_bg: `${STEAM_CDN}/${appid}/page_bg_generated_v6b.jpg`,
+});
+
+// 简单内存缓存
+// Key: appid, Value: { data: any, expire: number }
+const cache = new Map<string, { data: any; expire: number }>();
+
+// 定时清理过期缓存（每小时执行一次）
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of cache) {
+    if (now > val.expire) {
+      cache.delete(key);
+    }
+  }
+}, 60 * 60 * 1000);
 
 // 辅助函数：检测 URL 是否有效 (HEAD 请求)
 async function isValidUrl(url: string): Promise<boolean> {
@@ -26,17 +46,15 @@ router.get('/game/:appid', async (req, res) => {
 
   // 1. 检查缓存
   const cached = cache.get(appid);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    // console.log(`[Steam] Cache hit for ${appid}`);
+  if (cached && Date.now() < cached.expire) {
     return res.json(cached.data);
   }
 
   // 2. 请求 Steam API
   try {
-    // console.log(`[Steam] Fetching ${appid} from Steam API...`);
     const steamUrl = `https://store.steampowered.com/api/appdetails?appids=${appid}`;
     const response = await fetch(steamUrl);
-    
+
     if (!response.ok) {
       throw new Error(`Steam API responded with ${response.status}`);
     }
@@ -46,46 +64,27 @@ router.get('/game/:appid', async (req, res) => {
     // 检查数据有效性
     if (data && data[appid] && data[appid].success) {
       const gameData = data[appid].data;
-      
+
       // 3. 构建并验证高清图
-      // 尝试构建高清图 (使用旧 CDN 规则，但我们会验证它)
-      const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
       const potentialHero = `${STEAM_CDN}/${appid}/library_hero.jpg`;
       const potentialPortrait = `${STEAM_CDN}/${appid}/library_600x900.jpg`;
 
-      // 并行验证 (这是后端做验证的关键步骤)
+      // 并行验证
       const [hasHero, hasPortrait] = await Promise.all([
         isValidUrl(potentialHero),
         isValidUrl(potentialPortrait)
       ]);
-      
+
       const result = {
         name: gameData.name,
-        // 基础图 (API 保证存在)
         header: gameData.header_image,
-        
-        // 高清图 (带自动兜底)
-        // 如果有 hero 就用 hero，没有就用 header 兜底
         hero: hasHero ? potentialHero : gameData.header_image,
-        
-        // 竖版图 (带自动兜底)
-        // 如果有 portrait 就用 portrait，没有就用 header 兜底
         portrait: hasPortrait ? potentialPortrait : gameData.header_image,
-        
-        // 背景图
         page_bg: gameData.background_raw || gameData.background
       };
 
-      // 4. 写入缓存
-      cache.set(appid, { data: result, timestamp: Date.now() });
-
-      // 5. 清理过期缓存（每次写入时都清理）
-      const now = Date.now();
-      for (const [key, val] of cache) {
-        if (now - val.timestamp > CACHE_DURATION) {
-          cache.delete(key);
-        }
-      }
+      // 4. 写入缓存（O(1) 操作）
+      cache.set(appid, { data: result, expire: Date.now() + CACHE_DURATION });
 
       return res.json(result);
     } else {
@@ -93,22 +92,17 @@ router.get('/game/:appid', async (req, res) => {
     }
   } catch (error) {
     console.error(`[Steam] Error fetching ${appid}:`, error);
-    
-    // 降级策略：网络错误时，返回标准 CDN 路径兜底
-    // 这样即使服务器连不上 Steam，前端用户如果能连上 CDN 依然能看图
-    const STEAM_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
+
+    // 降级策略：返回标准 CDN 路径
     const fallbackResult = {
-      name: 'Unknown Game', // 前端通常已经有名字了，这个可能用不上
-      header: `${STEAM_CDN}/${appid}/header.jpg`,
-      hero: `${STEAM_CDN}/${appid}/library_hero.jpg`,
-      portrait: `${STEAM_CDN}/${appid}/library_600x900.jpg`,
-      page_bg: `${STEAM_CDN}/${appid}/page_bg_generated_v6b.jpg`
+      name: 'Unknown Game',
+      ...getDefaultImages(appid)
     };
-    
-    // 缓存失败结果 5 分钟，避免频繁重试超时请求
+
+    // 缓存失败结果 5 分钟，避免频繁重试
     cache.set(appid, {
       data: fallbackResult,
-      timestamp: Date.now() - CACHE_DURATION + 5 * 60 * 1000
+      expire: Date.now() + 5 * 60 * 1000
     });
 
     return res.json(fallbackResult);
