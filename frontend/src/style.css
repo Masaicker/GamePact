@@ -131,7 +131,7 @@ body::after {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 50;
+    z-index: 58;
     width: 100%;
   }
 

@@ -39,9 +39,35 @@ const loadingPresetGames = ref(false);
 const showPresetGameDialog = ref(false);
 const showImageDialog = ref(false);
 
+// 弹窗拖拽逻辑
+const dialogOffset = ref({ x: 0, y: 0 });
+const startDrag = (e: MouseEvent) => {
+  // 排除点击按钮的情况
+  const target = e.target as HTMLElement;
+  if (target.closest('button')) return;
+
+  const startX = e.clientX - dialogOffset.value.x;
+  const startY = e.clientY - dialogOffset.value.y;
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    dialogOffset.value.x = moveEvent.clientX - startX;
+    dialogOffset.value.y = moveEvent.clientY - startY;
+  };
+
+  const onMouseUp = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+};
+
 // 监听弹窗显示，锁定滚动
 watch(showPresetGameDialog, (val) => {
-  document.body.style.overflow = val ? 'hidden' : '';
+  // 允许背景滚动，以便查看高亮的游戏列表
+  // document.body.style.overflow = val ? 'hidden' : '';
+  
   // 关闭弹窗时清空搜索
   if (!val) {
     presetGameSearch.value = '';
@@ -67,7 +93,7 @@ const openImageDialog = (index: number) => {
     ElMessage.info('Steam 游戏会自动获取图片，无需手动添加');
     return;
   }
-  
+
   currentImageOptionIndex.value = index;
   const existing = option.images || [];
   tempImageUrls.value = [
@@ -82,7 +108,7 @@ const openImageDialog = (index: number) => {
 const saveImages = () => {
   if (currentImageOptionIndex.value !== -1) {
     const urls = tempImageUrls.value.filter(url => url && url.trim());
-    
+
     // 校验 URL 格式
     const urlPattern = /^https?:\/\/.+/i;
     for (const url of urls) {
@@ -128,36 +154,66 @@ const filteredPresetGames = computed(() => {
   }
   const query = presetGameSearch.value.toLowerCase();
   return presetGames.value.filter((game) =>
-    game.name.toLowerCase().includes(query)
+      game.name.toLowerCase().includes(query)
   );
 });
 
-// 添加预设游戏到选项
-const addPresetGame = (game: any) => {
-  // 查找完全空的对象（没名字也没链接）
-  const emptyIndex = gameOptions.value.findIndex(
-    opt => !opt.name?.trim() && !opt.link?.trim()
-  );
-
-  const newOption = {
-    name: game.name,
-    link: game.link || '',
-    showLinkInput: false,
-    images: game.images || undefined,
-  };
-
-  if (emptyIndex !== -1) {
-    // 复用空对象
-    gameOptions.value[emptyIndex] = newOption;
-  } else {
-    // 创建新对象
-    gameOptions.value.push(newOption);
-  }
-
-  // 不关闭弹窗，方便连续添加
-  ElMessage.success(`已添加：${game.name}`);
+// 判断预设游戏是否已被选中
+const isPresetSelected = (game: any) => {
+  return gameOptions.value.some(opt => {
+    const optName = opt.name?.trim() || '';
+    const gameName = game.name?.trim() || '';
+    const optLink = opt.link?.trim() || '';
+    const gameLink = game.link?.trim() || '';
+    return optName === gameName && optLink === gameLink;
+  });
 };
 
+// 切换预设游戏选中状态（添加/移除）
+const togglePresetGame = (game: any) => {
+  if (isPresetSelected(game)) {
+    // === 移除逻辑 ===
+    const index = gameOptions.value.findIndex(opt => {
+      const optName = opt.name?.trim() || '';
+      const gameName = game.name?.trim() || '';
+      const optLink = opt.link?.trim() || '';
+      const gameLink = game.link?.trim() || '';
+      return optName === gameName && optLink === gameLink;
+    });
+
+    if (index !== -1) {
+      if (gameOptions.value.length > 1) {
+        // 如果有多行，直接删除
+        gameOptions.value.splice(index, 1);
+        ElMessage.success(`已移除：${game.name}`);
+      } else {
+        // 如果只剩一行，清空内容
+        clearGameOption(index);
+        ElMessage.success(`已移除：${game.name}`);
+      }
+    }
+  } else {
+    // === 添加逻辑 ===
+    // 查找完全空的对象
+    const emptyIndex = gameOptions.value.findIndex(
+      opt => !opt.name?.trim() && !opt.link?.trim()
+    );
+
+    const newOption = {
+      name: game.name,
+      link: game.link || '',
+      showLinkInput: false,
+      images: game.images || undefined,
+    };
+
+    if (emptyIndex !== -1) {
+      gameOptions.value[emptyIndex] = newOption;
+    } else {
+      gameOptions.value.push(newOption);
+    }
+    ElMessage.success(`已添加：${game.name}`);
+  }
+};
 // 添加游戏选项
 const addGameOption = () => {
   gameOptions.value.push({ name: '', link: '', showLinkInput: false });
@@ -211,7 +267,7 @@ const onDragStart = (e: DragEvent, index: number) => {
 const onDragOver = (e: DragEvent, index: number) => {
   e.preventDefault();
   if (draggedIndex.value === null || draggedIndex.value === index) return;
-  
+
   // 交换位置
   const newOptions = [...gameOptions.value];
   const [removed] = newOptions.splice(draggedIndex.value, 1);
@@ -240,18 +296,18 @@ const handleSubmit = async () => {
 
   // 过滤：只保留有名字的选项
   const validOptions = gameOptions.value
-    .filter(opt => opt.name?.trim())
-    .map(({ name, link, images }) => {
-      const trimmedLink = link?.trim() || undefined;
-      // 如果是 Steam 游戏，强制忽略手动添加的图片
-      const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
+      .filter(opt => opt.name?.trim())
+      .map(({ name, link, images }) => {
+        const trimmedLink = link?.trim() || undefined;
+        // 如果是 Steam 游戏，强制忽略手动添加的图片
+        const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
 
-      return {
-        name: name.trim(),
-        link: trimmedLink,
-        images: (!isSteam && images && images.length > 0) ? images : undefined
-      };
-    });
+        return {
+          name: name.trim(),
+          link: trimmedLink,
+          images: (!isSteam && images && images.length > 0) ? images : undefined
+        };
+      });
 
   if (validOptions.length < 1) {
     ElMessage.warning('请至少填写一个游戏选项');
@@ -319,8 +375,8 @@ onMounted(() => {
     <div class="max-w-3xl mx-auto">
       <!-- 返回按钮 -->
       <button
-        @click="router.back()"
-        class="btn btn-ghost mb-6"
+          @click="router.back()"
+          class="btn btn-ghost mb-6"
       >
         <Icon icon="mdi:arrow-left" class="mr-2 h-5 w-5" />
         返回
@@ -332,7 +388,7 @@ onMounted(() => {
         <p class="font-mono-retro text-[#8b8178]">> 创建一个新的游戏聚会活动</p>
       </div>
 
-      <div class="card p-6">
+      <div class="card p-6" :class="{'!overflow-visible': showPresetGameDialog}">
         <form @submit.prevent="handleSubmit" class="space-y-8">
           <!-- 游戏选项 -->
           <div>
@@ -341,17 +397,17 @@ onMounted(() => {
               游戏选项
               <span class="text-[#6b5a45]">（至少一个）</span>
             </label>
-            <div class="space-y-3">
+            <div class="space-y-3" :class="{'relative z-[55] bg-[#1a1814] shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] outline outline-[3px] outline-[#c4941f]/50 outline-offset-8 rounded-lg transition-all duration-300': showPresetGameDialog}">
               <div
-                v-for="(option, index) in gameOptions"
-                :key="index"
-                :draggable="gameOptions.length > 1 && allowDrag"
-                @mousedown="onMouseDown"
-                @dragstart="onDragStart($event, index)"
-                @dragover="onDragOver($event, index)"
-                @dragend="onDragEnd"
-                class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4"
-                :class="{'opacity-50': draggedIndex === index, 'border-dashed border-[#c4941f]': draggedIndex !== null && draggedIndex !== index}"
+                  v-for="(option, index) in gameOptions"
+                  :key="index"
+                  :draggable="gameOptions.length > 1 && allowDrag"
+                  @mousedown="onMouseDown"
+                  @dragstart="onDragStart($event, index)"
+                  @dragover="onDragOver($event, index)"
+                  @dragend="onDragEnd"
+                  class="border-2 border-[#6b5a45] bg-[#1a1814] rounded p-4"
+                  :class="{'opacity-50': draggedIndex === index, 'border-dashed border-[#c4941f]': draggedIndex !== null && draggedIndex !== index}"
               >
                 <!-- 游戏名称行 -->
                 <div class="flex items-center gap-3 mb-3">
@@ -360,47 +416,47 @@ onMounted(() => {
                   </div>
                   <div class="flex-1">
                     <input
-                      v-model="option.name"
-                      type="text"
-                      placeholder="> 输入游戏名称"
-                      class="input-field"
+                        v-model="option.name"
+                        type="text"
+                        placeholder="> 输入游戏名称"
+                        class="input-field"
                     />
                   </div>
                   <button
-                    type="button"
-                    @click="toggleLinkInput(index)"
-                    class="btn btn-ghost"
-                    title="添加链接"
+                      type="button"
+                      @click="toggleLinkInput(index)"
+                      class="btn btn-ghost"
+                      title="添加链接"
                   >
                     <Icon :icon="option.showLinkInput ? 'mdi:chevron-up' : 'mdi:link'" class="h-5 w-5 mr-1" />
                     {{ option.showLinkInput ? '收起' : '添加链接' }}
                   </button>
                   <button
-                    v-if="!extractSteamAppId(option.link)"
-                    type="button"
-                    @click="openImageDialog(index)"
-                    class="btn btn-ghost px-2"
-                    title="（可选）手动添加图片"
+                      v-if="!extractSteamAppId(option.link)"
+                      type="button"
+                      @click="openImageDialog(index)"
+                      class="btn btn-ghost px-2"
+                      title="（可选）手动添加图片"
                   >
                     <Icon icon="mdi:image-plus" class="h-5 w-5" :class="{'text-[#c4941f]': option.images?.length}" />
                   </button>
                   <!-- 单选项有内容时显示清空按钮 -->
                   <button
-                    v-if="gameOptions.length === 1 && hasGameOptionContent(option)"
-                    type="button"
-                    @click="clearGameOption(index)"
-                    class="btn btn-danger"
-                    title="清空内容"
+                      v-if="gameOptions.length === 1 && hasGameOptionContent(option)"
+                      type="button"
+                      @click="clearGameOption(index)"
+                      class="btn btn-danger"
+                      title="清空内容"
                   >
                     <Icon icon="mdi:eraser" class="h-5 w-5" />
                   </button>
                   <!-- 多选项时显示删除按钮 -->
                   <button
-                    v-if="gameOptions.length > 1"
-                    type="button"
-                    @click="removeGameOption(index)"
-                    class="btn btn-danger"
-                    title="删除"
+                      v-if="gameOptions.length > 1"
+                      type="button"
+                      @click="removeGameOption(index)"
+                      class="btn btn-danger"
+                      title="删除"
                   >
                     <Icon icon="mdi:close" class="h-5 w-5" />
                   </button>
@@ -412,27 +468,27 @@ onMounted(() => {
                     游戏介绍链接（可选）
                   </label>
                   <input
-                    v-model="option.link"
-                    type="text"
-                    placeholder="> https://example.com （Steam、游戏官网等）"
-                    class="input-field"
+                      v-model="option.link"
+                      type="text"
+                      placeholder="> https://example.com （Steam、游戏官网等）"
+                      class="input-field"
                   />
                 </div>
               </div>
             </div>
             <div class="mt-3 flex gap-3">
               <button
-                type="button"
-                @click="addGameOption"
-                class="btn btn-ghost"
+                  type="button"
+                  @click="addGameOption"
+                  class="btn btn-ghost"
               >
                 <Icon icon="mdi:plus" class="mr-2 h-5 w-5" />
                 添加更多游戏
               </button>
               <button
-                type="button"
-                @click="showPresetGameDialog = true"
-                class="btn btn-ghost"
+                  type="button"
+                  @click="showPresetGameDialog = true"
+                  class="btn btn-ghost"
               >
                 <Icon icon="mdi:gamepad-variant" class="mr-2 h-5 w-5" />
                 从预设添加
@@ -449,10 +505,10 @@ onMounted(() => {
                 开始时间
               </label>
               <input
-                v-model="startTime"
-                type="datetime-local"
-                class="input-field"
-                :min="formatLocalISO(new Date())"
+                  v-model="startTime"
+                  type="datetime-local"
+                  class="input-field"
+                  :min="formatLocalISO(new Date())"
               />
             </div>
 
@@ -464,10 +520,10 @@ onMounted(() => {
                 <span class="text-[#6b5a45]">（必须早于开始时间）</span>
               </label>
               <input
-                v-model="endVotingTime"
-                type="datetime-local"
-                class="input-field"
-                :min="formatLocalISO(new Date())"
+                  v-model="endVotingTime"
+                  type="datetime-local"
+                  class="input-field"
+                  :min="formatLocalISO(new Date())"
               />
             </div>
           </div>
@@ -480,10 +536,10 @@ onMounted(() => {
             </label>
             <div class="flex items-center space-x-4">
               <input
-                v-model.number="minPlayers"
-                type="number"
-                min="2"
-                class="input-field w-32"
+                  v-model.number="minPlayers"
+                  type="number"
+                  min="2"
+                  class="input-field w-32"
               />
               <p class="font-mono-retro text-sm text-[#8b8178]">
                 达到此人数活动才会成行
@@ -494,16 +550,16 @@ onMounted(() => {
           <!-- 按钮 -->
           <div class="flex justify-end space-x-3 pt-6 border-t-2 border-[#6b5a45]">
             <button
-              type="button"
-              @click="handleCancel"
-              class="btn btn-ghost"
+                type="button"
+                @click="handleCancel"
+                class="btn btn-ghost"
             >
               取消
             </button>
             <button
-              type="submit"
-              :disabled="loading"
-              class="btn btn-primary"
+                type="submit"
+                :disabled="loading"
+                class="btn btn-primary"
             >
               <Icon v-if="loading" icon="mdi:loading" class="mr-2 h-5 w-5 animate-spin" />
               <Icon v-else icon="mdi:plus-circle" class="mr-2 h-5 w-5" />
@@ -515,11 +571,25 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 预设游戏对话框 -->
-    <teleport to="body">
-      <div v-if="showPresetGameDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
-          <div class="mb-4 flex items-center justify-between">
+                <!-- 预设游戏对话框 -->
+
+                <teleport to="body">
+
+                  <div 
+
+                    v-if="showPresetGameDialog" 
+
+                    class="fixed inset-0 z-[60] flex items-center justify-center bg-transparent"
+
+                    @click.self="showPresetGameDialog = false"
+
+                  >            <div 
+              class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-hidden flex flex-col"
+              :style="{ transform: `translate(${dialogOffset.x}px, ${dialogOffset.y}px)` }"
+            >          <div
+              class="mb-4 flex items-center justify-between cursor-move select-none"
+              @mousedown="startDrag"
+          >
             <h3 class="title-subsection text-[#f5f0e6]">选择预设游戏</h3>
             <button @click="showPresetGameDialog = false" class="btn btn-ghost">
               <Icon icon="mdi:close" class="h-5 w-5" />
@@ -529,100 +599,114 @@ onMounted(() => {
           <!-- 搜索框 -->
           <div class="mb-4">
             <input
-              v-model="presetGameSearch"
-              type="text"
-              class="input-field"
-              placeholder="> 搜索预设游戏..."
+                v-model="presetGameSearch"
+                type="text"
+                class="input-field"
+                placeholder="> 搜索预设游戏..."
             />
           </div>
 
-          <!-- 游戏列表 -->
-          <div v-if="loadingPresetGames" class="py-8 text-center font-mono-retro text-[#8b8178]">
-            > 加载中...
-          </div>
+          <!-- 游戏列表区域 -->
+          <div class="flex-1 overflow-y-auto min-h-0">
+            <div v-if="loadingPresetGames" class="py-8 text-center font-mono-retro text-[#8b8178]">
+              > 加载中...
+            </div>
 
-          <div
-            v-else-if="filteredPresetGames.length === 0"
-            class="py-8 text-center font-mono-retro text-[#6b5a45]"
-          >
-            > {{ presetGameSearch ? '未找到匹配的游戏' : '暂无预设游戏' }}
-          </div>
-
-          <div v-else class="max-h-96 space-y-2 overflow-y-auto">
-            <button
-              v-for="game in filteredPresetGames"
-              :key="game.id"
-              type="button"
-              @click="addPresetGame(game)"
-              class="w-full flex items-center justify-between border-2 border-[#6b5a45] bg-[#1a1814] px-4 py-3 hover:border-[#c4941f] transition-all text-left"
+            <div
+                v-else-if="filteredPresetGames.length === 0"
+                class="py-8 text-center font-mono-retro text-[#6b5a45]"
             >
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center space-x-2">
-                  <span class="font-medium text-[#f5f0e6]">{{ game.name }}</span>
-                  <a
-                    v-if="game.link"
-                    :href="game.link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    @click.stop
-                    class="text-[#8b8178] hover:text-[#c4941f] flex-shrink-0"
-                    title="查看链接"
-                  >
-                    <Icon icon="mdi:open-in-new" class="h-4 w-4" />
-                  </a>
-                </div>
-                <div v-if="game.link" class="font-mono-retro text-xs text-[#8b8178] mt-1 truncate">
-                  {{ game.link }}
-                </div>
-              </div>
-              <Icon icon="mdi:plus-circle" class="h-6 w-6 text-[#6b9b7a] flex-shrink-0 ml-3" />
-            </button>
+              > {{ presetGameSearch ? '未找到匹配的游戏' : '暂无预设游戏' }}
+            </div>
+
+            <div v-else class="space-y-2 pr-2">
+                          <button
+                            v-for="game in filteredPresetGames"
+                            :key="game.id"
+                            type="button"
+                            @click="togglePresetGame(game)"
+                            class="w-full flex items-center justify-between border-2 border-[#6b5a45] bg-[#1a1814] px-4 py-3 hover:border-[#c4941f] transition-all text-left group"
+                          >
+                            <div class="flex-1 min-w-0">
+                              <div class="flex items-center space-x-2">
+                                <span class="font-medium text-[#f5f0e6]">{{ game.name }}</span>
+                                <a
+                                  v-if="game.link"
+                                  :href="game.link"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  @click.stop
+                                  class="text-[#8b8178] hover:text-[#c4941f] flex-shrink-0"
+                                  title="查看链接"
+                                >
+                                  <Icon icon="mdi:open-in-new" class="h-4 w-4" />
+                                </a>
+                              </div>
+                              <div v-if="game.link" class="font-mono-retro text-xs text-[#8b8178] mt-1 truncate">
+                                {{ game.link }}
+                              </div>
+                            </div>
+                            <Icon 
+                              :icon="isPresetSelected(game) ? 'mdi:minus-circle' : 'mdi:plus-circle'" 
+                              class="h-6 w-6 flex-shrink-0 ml-3 transition-colors"
+                              :class="isPresetSelected(game) ? 'text-red-500 group-hover:text-red-400' : 'text-[#6b9b7a] group-hover:text-[#8bc49a]'" 
+                            />
+                          </button>            </div>
           </div>
         </div>
       </div>
     </teleport>
 
-    <!-- 手动添加图片对话框 -->
-    <teleport to="body">
-      <div v-if="showImageDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div class="card w-full max-w-lg p-6">
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="title-subsection text-[#f5f0e6]">（可选）手动添加游戏图片</h3>
-            <button @click="showImageDialog = false" class="btn btn-ghost">
-              <Icon icon="mdi:close" class="h-5 w-5" />
-            </button>
-          </div>
+            <!-- 手动添加图片对话框 -->
+
+            <teleport to="body">
+
+              <div v-if="showImageDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+
+                <div class="card w-full max-w-lg p-6">
+
+                  <div class="mb-4 flex items-center justify-between">
+
+                    <h3 class="title-subsection text-[#f5f0e6]">（可选）手动添加游戏图片</h3>
+
+                    <button @click="showImageDialog = false" class="btn btn-ghost">
+
+                      <Icon icon="mdi:close" class="h-5 w-5" />
+
+                    </button>
+
+                  </div>
 
           <div class="mb-6 space-y-4">
             <p class="font-mono-retro text-sm text-[#8b8178]">
               > 请输入图片的直接链接（URL）。
             </p>
-            
+
             <div v-for="(field, index) in imageInputs" :key="index">
               <label class="mb-1 block font-mono-retro text-sm text-[#c4b8a8]">
                 {{ field.label }}
               </label>
               <input
-                v-model="tempImageUrls[index]"
-                type="text"
-                class="input-field"
-                placeholder="> https://example.com/image.jpg"
+                  v-model="tempImageUrls[index]"
+                  type="text"
+                  class="input-field"
+                  placeholder="> https://example.com/image.jpg"
               />
             </div>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4 border-t-2 border-[#6b5a45]">
             <button
-              type="button"
-              @click="showImageDialog = false"
-              class="btn btn-ghost"
+                type="button"
+                @click="showImageDialog = false"
+                class="btn btn-ghost"
             >
               取消
             </button>
             <button
-              type="button"
-              @click="saveImages"
-              class="btn btn-primary"
+                type="button"
+                @click="saveImages"
+                class="btn btn-primary"
             >
               确认保存
             </button>
