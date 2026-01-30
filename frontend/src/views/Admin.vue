@@ -356,7 +356,7 @@
           <div class="flex items-center gap-2">
             <input
               v-model="newGameLink"
-              type="url"
+              type="text"
               class="input-field"
               placeholder="> https://store.steampowered.com/app/..."
             />
@@ -490,7 +490,7 @@
               <div class="flex items-center gap-2">
                 <input
                   v-model="editingGame.link"
-                  type="url"
+                  type="text"
                   class="input-field"
                 />
                 <button
@@ -544,7 +544,7 @@
                 </label>
                 <input
                   v-model="tempImageUrls[index]"
-                  type="url"
+                  type="text"
                   class="input-field"
                   placeholder="> https://example.com/image.jpg"
                 />
@@ -1404,7 +1404,7 @@ const saveImages = () => {
   const urlPattern = /^https?:\/\/.+/i;
   for (const url of urls) {
     if (!urlPattern.test(url)) {
-      ElMessage.error('图片链接格式不正确，必须以 http:// 或 https:// 开头');
+      ElMessage.warning('图片链接格式不正确，必须以 http:// 或 https:// 开头');
       return;
     }
   }
@@ -1461,6 +1461,13 @@ const createPresetGame = async () => {
 
   // 如果检测到 Steam ID，强制忽略 images
   const trimmedLink = newGameLink.value.trim() || null;
+
+  // 校验链接格式
+  if (trimmedLink && !/^https?:\/\/.+/i.test(trimmedLink)) {
+    ElMessage.warning('游戏链接格式不正确，必须以 http:// 或 https:// 开头');
+    return;
+  }
+
   const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
   const finalImages = (!isSteam && newGameImages.value && newGameImages.value.length > 0) ? newGameImages.value : undefined;
 
@@ -1511,6 +1518,13 @@ const updatePresetGame = async () => {
 
   // 清洗逻辑
   const trimmedLink = editingGame.value.link?.trim() || null;
+
+  // 校验链接格式
+  if (trimmedLink && !/^https?:\/\/.+/i.test(trimmedLink)) {
+    ElMessage.warning('游戏链接格式不正确，必须以 http:// 或 https:// 开头');
+    return;
+  }
+
   const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
   const finalImages = (!isSteam && editingGame.value.images && editingGame.value.images.length > 0) ? editingGame.value.images : undefined;
 

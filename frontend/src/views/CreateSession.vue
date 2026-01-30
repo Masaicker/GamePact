@@ -87,7 +87,7 @@ const saveImages = () => {
     const urlPattern = /^https?:\/\/.+/i;
     for (const url of urls) {
       if (!urlPattern.test(url)) {
-        ElMessage.error('图片链接格式不正确，必须以 http:// 或 https:// 开头');
+        ElMessage.warning('图片链接格式不正确，必须以 http:// 或 https:// 开头');
         return;
       }
     }
@@ -258,6 +258,13 @@ const handleSubmit = async () => {
     return;
   }
 
+  // 校验所有选项的链接格式
+  const invalidLinkIndex = validOptions.findIndex(opt => opt.link && !/^https?:\/\/.+/i.test(opt.link));
+  if (invalidLinkIndex !== -1) {
+    ElMessage.warning(`游戏 "${validOptions[invalidLinkIndex].name}" 的链接格式不正确，必须以 http:// 或 https:// 开头`);
+    return;
+  }
+
   if (!startTime.value) {
     ElMessage.warning('请选择开始时间');
     return;
@@ -406,7 +413,7 @@ onMounted(() => {
                   </label>
                   <input
                     v-model="option.link"
-                    type="url"
+                    type="text"
                     placeholder="> https://example.com （Steam、游戏官网等）"
                     class="input-field"
                   />
@@ -597,7 +604,7 @@ onMounted(() => {
               </label>
               <input
                 v-model="tempImageUrls[index]"
-                type="url"
+                type="text"
                 class="input-field"
                 placeholder="> https://example.com/image.jpg"
               />
