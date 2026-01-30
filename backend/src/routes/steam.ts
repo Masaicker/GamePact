@@ -90,8 +90,13 @@ router.get('/game/:appid', async (req, res) => {
     } else {
       return res.status(404).json({ error: 'Game not found on Steam' });
     }
-  } catch (error) {
-    console.error(`[Steam] Error fetching ${appid}:`, error);
+  } catch (error: any) {
+    // 区分网络错误和其他错误，简化日志
+    if (error.code === 'UND_ERR_CONNECT_TIMEOUT' || error.code === 'UND_ERR_SOCKET' || error.message?.includes('fetch failed')) {
+      console.warn(`[Steam] Network error fetching app ${appid}: ${error.code || error.message} (Using fallback)`);
+    } else {
+      console.error(`[Steam] Unexpected error fetching ${appid}:`, error);
+    }
 
     // 降级策略：返回标准 CDN 路径
     const fallbackResult = {

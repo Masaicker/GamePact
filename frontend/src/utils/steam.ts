@@ -66,55 +66,115 @@ function getGameImages(link?: string) {
 /**
  * 获取游戏卡片背景样式 (Header - 横图 460x215)
  */
-export function getGameCardBackground(link?: string): Record<string, string> {
+export function getGameCardBackground(link?: string, manualImages?: string[]): Record<string, string> {
+  // 1. 如果是 Steam 游戏，优先使用 Steam 图片
   const images = getGameImages(link);
-  if (!images) return {};
+  if (images) {
+    return {
+      backgroundImage: `url(${images.header})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  }
 
-  return {
-    backgroundImage: `url(${images.header})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  };
+  // 2. 否则使用手动图片 (Index 0: Header)
+  if (manualImages && manualImages.length > 0 && manualImages[0]) {
+    return {
+      backgroundImage: `url(${manualImages[0]})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  }
+
+  return {};
 }
 
 /**
  * 获取游戏竖版封面背景样式 (Portrait - 竖图 600x900)
  */
-export function getGamePortraitBackground(link?: string): Record<string, string> {
+export function getGamePortraitBackground(link?: string, manualImages?: string[]): Record<string, string> {
+  // 1. 如果是 Steam 游戏，优先使用 Steam 图片
   const images = getGameImages(link);
-  if (!images) return {};
+  if (images) {
+    return {
+      backgroundImage: `url(${images.portrait})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  }
 
-  return {
-    backgroundImage: `url(${images.portrait})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  };
+  // 2. 否则使用手动图片 (Index 1: Portrait)
+  if (manualImages && manualImages.length > 0) {
+    // 优先用 index 1，没有则 fallback 到 index 0
+    const url = manualImages[1] || manualImages[0];
+    if (url) {
+      return {
+        backgroundImage: `url(${url})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      };
+    }
+  }
+
+  return {};
 }
 
 /**
  * 获取活动标题背景样式 (Hero - 超大横幅)
  */
-export function getSessionHeaderBackground(link?: string): Record<string, string> {
+export function getSessionHeaderBackground(link?: string, manualImages?: string[]): Record<string, string> {
+  // 1. 如果是 Steam 游戏，优先使用 Steam 图片
   const images = getGameImages(link);
-  if (!images) return {};
+  if (images) {
+    return {
+      backgroundImage: `url(${images.hero})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    };
+  }
 
-  return {
-    backgroundImage: `url(${images.hero})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  };
+  // 2. 否则使用手动图片 (Index 2: Hero/Page BG)
+  if (manualImages && manualImages.length > 0) {
+    // 优先用 index 2，没有则 fallback 到 index 0
+    const url = manualImages[2] || manualImages[0];
+    if (url) {
+      return {
+        backgroundImage: `url(${url})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      };
+    }
+  }
+
+  return {};
 }
 
 /**
  * 获取商店页背景样式 (Page BG - 氛围大图)
  */
-export function getGamePageBackground(link?: string): Record<string, string> {
+export function getGamePageBackground(link?: string, manualImages?: string[]): Record<string, string> {
+  // 1. 如果是 Steam 游戏，优先使用 Steam 图片
   const images = getGameImages(link);
-  if (!images) return {};
+  if (images) {
+    return {
+      backgroundImage: `url(${images.page_bg || images.background})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'right center',
+    };
+  }
 
-  return {
-    backgroundImage: `url(${images.page_bg || images.background})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'right center',
-  };
+  // 2. 否则使用手动图片 (Index 2: Hero/Page BG)
+  if (manualImages && manualImages.length > 0) {
+    // 优先用 index 2，没有则 fallback 到 index 0
+    const url = manualImages[2] || manualImages[0];
+    if (url) {
+      return {
+        backgroundImage: `url(${url})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'right center',
+      };
+    }
+  }
+
+  return {};
 }

@@ -111,6 +111,26 @@ const showVoteResults = computed(() => {
   return session.value && session.value.status === 'voting' && !currentUserParticipant.value?.isExcused;
 });
 
+// 最终游戏的图片（用于背景图）
+const finalGameImages = computed(() => {
+  // 1. 优先使用 finalGame
+  if (session.value?.finalGame) {
+    if (typeof session.value.finalGame === 'string') {
+      return parsedGameOptions.value.find(opt => opt.name === session.value.finalGame)?.images || null;
+    }
+    if (typeof session.value.finalGame === 'object') {
+      return session.value.finalGame.images || parsedGameOptions.value.find(opt => opt.name === session.value.finalGame.name)?.images || null;
+    }
+  }
+  
+  // 2. 如果没有 finalGame，回退到第一个选项（与显示的标题逻辑一致）
+  if (parsedGameOptions.value.length > 0) {
+    return parsedGameOptions.value[0].images || null;
+  }
+  
+  return null;
+});
+
 // 最终游戏的链接（用于背景图）
 const finalGameLink = computed(() => {
   // 1. 优先使用 finalGame
@@ -437,8 +457,8 @@ onUnmounted(() => {
       <!-- 活动信息卡片 -->
       <div class="card p-6 relative overflow-hidden">
         <!-- Steam 背景淡化层 -->
-        <div v-if="finalGameLink" class="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none mix-blend-luminosity"
-             :style="{ ...getSessionHeaderBackground(finalGameLink), maskImage: 'linear-gradient(to bottom, black 0%, transparent 90%)', webkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 90%)' }"></div>
+        <div v-if="finalGameLink || finalGameImages" class="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none mix-blend-luminosity"
+             :style="{ ...getSessionHeaderBackground(finalGameLink, finalGameImages), maskImage: 'linear-gradient(to bottom, black 0%, transparent 90%)', webkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 90%)' }"></div>
 
         <div class="relative z-10">
           <div class="flex items-start justify-between mb-6">
@@ -611,8 +631,8 @@ onUnmounted(() => {
                   <!-- 纵向进度条容器 -->
                   <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
                     <!-- Steam 竖版背景 -->
-                    <div v-if="game.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50 transition-opacity duration-300"
-                         :style="{ ...getGamePortraitBackground(game.link), opacity: selectedGameIndex === index ? 0.7 : 0.25 }"></div>
+                    <div v-if="game.link || game.images" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50 transition-opacity duration-300"
+                         :style="{ ...getGamePortraitBackground(game.link, game.images), opacity: selectedGameIndex === index ? 0.7 : 0.25 }"></div>
 
                     <!-- 纵向进度条 -->
                     <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
@@ -765,8 +785,8 @@ onUnmounted(() => {
                   <!-- 纵向进度条容器 -->
                   <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
                     <!-- Steam 竖版背景 -->
-                    <div v-if="game.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50 transition-opacity duration-300"
-                         :style="{ ...getGamePortraitBackground(game.link), opacity: getUserVote === index ? 0.7 : 0.25 }"></div>
+                    <div v-if="game.link || game.images" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50 transition-opacity duration-300"
+                         :style="{ ...getGamePortraitBackground(game.link, game.images), opacity: getUserVote === index ? 0.7 : 0.25 }"></div>
 
                     <!-- 纵向进度条 -->
                     <div class="absolute left-0 bottom-0 w-full transition-all duration-500 ease-out">
@@ -921,9 +941,9 @@ onUnmounted(() => {
               <!-- 纵向进度条容器 -->
               <div class="relative h-40 border-2 border-[#6b5a45] bg-[#1a1814] rounded p-2">
                 <!-- Steam 竖版背景 -->
-                <div v-if="parsedGameOptions[result.gameIndex]?.link" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50"
+                <div v-if="parsedGameOptions[result.gameIndex]?.link || parsedGameOptions[result.gameIndex]?.images" class="absolute inset-0 bg-cover bg-center pointer-events-none rounded saturate-50"
                      :style="{ 
-                       ...getGamePortraitBackground(parsedGameOptions[result.gameIndex].link), 
+                       ...getGamePortraitBackground(parsedGameOptions[result.gameIndex].link, parsedGameOptions[result.gameIndex].images), 
                        opacity: (finalGameName && result.gameName === finalGameName) || (!finalGameName && index === 0 && result.voteCount > 0) ? 0.7 : 0.25 
                      }"></div>
 

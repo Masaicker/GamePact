@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
+import { extractSteamAppId } from '../utils/steam';
 import { sessionsApi } from '../api';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../stores/user';
@@ -16,6 +17,7 @@ interface GameOption {
   name: string;
   link?: string;
   showLinkInput?: boolean;
+  images?: string[];
 }
 
 const gameOptions = ref<GameOption[]>([{ name: '', link: '', showLinkInput: false }]);
@@ -35,6 +37,54 @@ const presetGames = ref<any[]>([]);
 const presetGameSearch = ref('');
 const loadingPresetGames = ref(false);
 const showPresetGameDialog = ref(false);
+const showImageDialog = ref(false);
+const currentImageOptionIndex = ref(-1);
+const tempImageUrls = ref<string[]>(['', '', '']);
+
+const imageInputs = [
+  { label: '活动列表卡片 (横图)' },
+  { label: '投票选项封面 (竖图)' },
+  { label: '详情页顶部背景 (大图)' }
+];
+
+// 打开图片手动添加对话框
+const openImageDialog = (index: number) => {
+  const option = gameOptions.value[index];
+  // 检查是否是 Steam 链接
+  if (option.link && extractSteamAppId(option.link)) {
+    ElMessage.info('Steam 游戏会自动获取图片，无需手动添加');
+    return;
+  }
+  
+  currentImageOptionIndex.value = index;
+  const existing = option.images || [];
+  tempImageUrls.value = [
+    existing[0] || '',
+    existing[1] || '',
+    existing[2] || ''
+  ];
+  showImageDialog.value = true;
+};
+
+// 保存手动添加的图片
+const saveImages = () => {
+  if (currentImageOptionIndex.value !== -1) {
+    const urls = tempImageUrls.value.filter(url => url && url.trim());
+    
+    // 校验 URL 格式
+    const urlPattern = /^https?:\/\/.+/i;
+    for (const url of urls) {
+      if (!urlPattern.test(url)) {
+        ElMessage.error('图片链接格式不正确，必须以 http:// 或 https:// 开头');
+        return;
+      }
+    }
+
+    gameOptions.value[currentImageOptionIndex.value].images = urls.length > 0 ? urls : undefined;
+    ElMessage.success(urls.length > 0 ? '已保存图片链接' : '已清除图片链接');
+  }
+  showImageDialog.value = false;
+};
 
 // 获取 Token
 const getToken = () => localStorage.getItem('token');
@@ -119,7 +169,17 @@ const handleSubmit = async () => {
   // 过滤空选项（只保留有名字的）
   const validOptions = gameOptions.value
     .filter(opt => opt.name?.trim())
-    .map(({ name, link }) => ({ name: name.trim(), link: link?.trim() || undefined }));
+    .map(({ name, link, images }) => {
+      const trimmedLink = link?.trim() || undefined;
+      // 如果是 Steam 游戏，强制忽略手动添加的图片
+      const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
+      
+      return { 
+        name: name.trim(), 
+        link: trimmedLink,
+        images: (!isSteam && images && images.length > 0) ? images : undefined 
+      };
+    });
 
   if (validOptions.length < 1) {
     ElMessage.warning('请至少填写一个游戏选项');
@@ -224,6 +284,15 @@ onMounted(() => {
                     {{ option.showLinkInput ? '收起' : '添加链接' }}
                   </button>
                   <button
+                    v-if="!extractSteamAppId(option.link)"
+                    type="button"
+                    @click="openImageDialog(index)"
+                    class="btn btn-ghost px-2"
+                    title="手动添加图片"
+                  >
+                    <Icon icon="mdi:image-plus" class="h-5 w-5" :class="{'text-[#c4941f]': option.images?.length}" />
+                  </button>
+                  <button
                     v-if="gameOptions.length > 1"
                     type="button"
                     @click="removeGameOption(index)"
@@ -255,7 +324,7 @@ onMounted(() => {
                 class="btn btn-ghost"
               >
                 <Icon icon="mdi:plus" class="mr-2 h-5 w-5" />
-                添加更多选项
+                添加更多游戏
               </button>
               <button
                 type="button"
@@ -404,6 +473,55 @@ onMounted(() => {
                 </div>
               </div>
               <Icon icon="mdi:plus-circle" class="h-6 w-6 text-[#6b9b7a] flex-shrink-0 ml-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- 手动添加图片对话框 -->
+    <teleport to="body">
+      <div v-if="showImageDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+        <div class="card w-full max-w-lg p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="title-subsection text-[#f5f0e6]">手动添加游戏图片</h3>
+            <button @click="showImageDialog = false" class="btn btn-ghost">
+              <Icon icon="mdi:close" class="h-5 w-5" />
+            </button>
+          </div>
+
+          <div class="mb-6 space-y-4">
+            <p class="font-mono-retro text-sm text-[#8b8178]">
+              > 请输入图片的直接链接（URL）。
+            </p>
+            
+            <div v-for="(field, index) in imageInputs" :key="index">
+              <label class="mb-1 block font-mono-retro text-sm text-[#c4b8a8]">
+                {{ field.label }}
+              </label>
+              <input
+                v-model="tempImageUrls[index]"
+                type="url"
+                class="input-field"
+                placeholder="> https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4 border-t-2 border-[#6b5a45]">
+            <button
+              type="button"
+              @click="showImageDialog = false"
+              class="btn btn-ghost"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              @click="saveImages"
+              class="btn btn-primary"
+            >
+              确认保存
             </button>
           </div>
         </div>

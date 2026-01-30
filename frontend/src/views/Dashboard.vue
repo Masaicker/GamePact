@@ -49,14 +49,14 @@ const nextHistoryPage = () => goToHistoryPage(historyCurrentPage.value + 1);
 // 解析游戏选项（获取第一个游戏的名称和链接）
 const parseFirstGameOption = (session: any) => {
   if (!session.gameOptions || session.gameOptions.length === 0) {
-    return { name: '未定游戏', link: null };
+    return { name: '未定游戏', link: null, images: undefined };
   }
 
   const firstOption = session.gameOptions[0];
   if (typeof firstOption === 'string') {
-    return { name: firstOption, link: null };
+    return { name: firstOption, link: null, images: undefined };
   }
-  return { name: firstOption.name, link: firstOption.link || null };
+  return { name: firstOption.name, link: firstOption.link || null, images: firstOption.images || undefined };
 };
 
 // 从 sessionStorage 读取标签状态，如果没有则默认为 'current'
@@ -465,10 +465,10 @@ onUnmounted(() => {
               class="card p-5 cursor-pointer hover:border-[#c4941f] transition-all duration-150 group relative overflow-hidden"
             >
               <!-- Steam 背景 (右侧溶解渐隐) -->
-              <div v-if="parseFirstGameOption(session).link"
+              <div v-if="parseFirstGameOption(session).link || parseFirstGameOption(session).images"
                    class="absolute right-0 top-0 bottom-0 w-[60%] opacity-25 pointer-events-none mix-blend-luminosity"
                    :style="{ 
-                     ...getGameCardBackground(parseFirstGameOption(session).link),
+                     ...getGameCardBackground(parseFirstGameOption(session).link, parseFirstGameOption(session).images),
                      maskImage: 'radial-gradient(ellipse at 90% 50%, black 20%, transparent 70%)',
                      webkitMaskImage: 'radial-gradient(ellipse at 90% 50%, black 20%, transparent 70%)'
                    }">
