@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { extractSteamAppId } from '../utils/steam';
@@ -12,6 +12,14 @@ const userStore = useUserStore();
 
 // 检查是否是管理员
 const isAdmin = computed(() => userStore.user?.isAdmin || false);
+
+// ESC 关闭弹窗逻辑
+const handleEsc = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (showImageDialog.value) showImageDialog.value = false;
+    else if (showPresetGameDialog.value) showPresetGameDialog.value = false;
+  }
+};
 
 interface GameOption {
   name: string;
@@ -375,11 +383,16 @@ const handleCancel = () => {
 };
 
 onMounted(() => {
+  window.addEventListener('keydown', handleEsc);
   if (isAdmin.value) {
     ElMessage.warning('管理员不能发起活动');
     router.push('/dashboard');
   }
   loadPresetGames();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleEsc);
 });
 </script>
 
@@ -734,16 +747,9 @@ onMounted(() => {
 
           <div class="flex justify-end space-x-3 pt-4 border-t-2 border-[#6b5a45]">
             <button
-                type="button"
-                @click="showImageDialog = false"
-                class="btn btn-ghost"
-            >
-              取消
-            </button>
-            <button
-                type="button"
-                @click="saveImages"
-                class="btn btn-primary"
+              type="button"
+              @click="saveImages"
+              class="btn btn-primary"
             >
               确认保存
             </button>

@@ -476,7 +476,12 @@
       <teleport to="body">
         <div v-if="showEditGameDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div class="card w-full max-w-md p-6">
-            <h3 class="title-subsection mb-4 text-[#f5f0e6]">编辑预设游戏</h3>
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="title-subsection text-[#f5f0e6]">编辑预设游戏</h3>
+              <button @click="showEditGameDialog = false" class="btn btn-ghost">
+                <Icon icon="mdi:close" class="h-5 w-5" />
+              </button>
+            </div>
             <div class="mb-4">
               <label class="mb-2 block font-mono-retro text-sm text-[#c4b8a8]">游戏名称</label>
               <input
@@ -504,12 +509,6 @@
               </div>
             </div>
             <div class="flex justify-end space-x-3">
-              <button
-                @click="showEditGameDialog = false"
-                class="btn btn-ghost"
-              >
-                取消
-              </button>
               <button
                 @click="updatePresetGame"
                 :disabled="updatingGame"
@@ -554,13 +553,6 @@
             <div class="flex justify-end space-x-3 pt-4 border-t-2 border-[#6b5a45]">
               <button
                 type="button"
-                @click="showImageDialog = false"
-                class="btn btn-ghost"
-              >
-                取消
-              </button>
-              <button
-                type="button"
                 @click="saveImages"
                 class="btn btn-primary"
               >
@@ -576,7 +568,12 @@
     <teleport to="body">
       <div v-if="showScoreDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
         <div class="card w-full max-w-md p-6">
-          <h3 class="title-subsection mb-4 text-[#f5f0e6]">调整积分</h3>
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="title-subsection text-[#f5f0e6]">调整积分</h3>
+            <button @click="showScoreDialog = false" class="btn btn-ghost">
+              <Icon icon="mdi:close" class="h-5 w-5" />
+            </button>
+          </div>
           <div class="mb-4">
             <p class="text-[#c4b8a8]">
               用户: <span class="font-medium text-[#f5f0e6]">{{ selectedUser?.displayName }}</span>
@@ -604,12 +601,6 @@
             ></textarea>
           </div>
           <div class="flex justify-end space-x-3">
-            <button
-              @click="showScoreDialog = false"
-              class="btn btn-ghost"
-            >
-              取消
-            </button>
             <button
               @click="adjustScore"
               :disabled="adjusting || !scoreChange || !scoreReason"
@@ -694,7 +685,12 @@
     <teleport to="body">
       <div v-if="showSelfPasswordDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
         <div class="card w-full max-w-md p-6">
-          <h3 class="title-subsection mb-4 text-[#f5f0e6]">修改我的密码</h3>
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="title-subsection text-[#f5f0e6]">修改我的密码</h3>
+            <button @click="showSelfPasswordDialog = false" class="btn btn-ghost">
+              <Icon icon="mdi:close" class="h-5 w-5" />
+            </button>
+          </div>
           
           <div class="mb-4">
             <label class="block text-sm font-mono-retro text-[#c4b8a8] mb-1">旧密码</label>
@@ -754,9 +750,6 @@
           </div>
           
           <div class="flex justify-end space-x-3">
-            <button @click="showSelfPasswordDialog = false" class="btn btn-ghost">
-              取消
-            </button>
             <button @click="handleChangeSelfPassword" :disabled="changingSelfPassword" class="btn btn-primary">
               {{ changingSelfPassword ? '提交中...' : '确认修改' }}
             </button>
@@ -768,11 +761,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Icon } from '@iconify/vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi, authApi } from '../api';
 import { extractSteamAppId } from '../utils/steam';
+
+// ESC 关闭弹窗逻辑
+const handleEsc = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    showEditGameDialog.value = false;
+    showImageDialog.value = false;
+    showScoreDialog.value = false;
+    showHistoryDialog.value = false;
+    showSelfPasswordDialog.value = false;
+  }
+};
 
 const activeTab = ref<'invites' | 'users' | 'audit' | 'backup' | 'games'>(
   (localStorage.getItem('adminTab') as any) || 'invites'
@@ -1654,6 +1658,7 @@ const importPresetGames = async (event: Event) => {
 };
 
 onMounted(() => {
+  window.addEventListener('keydown', handleEsc);
   loadInvites();
   // 根据持久化的标签页加载对应数据
   if (activeTab.value === 'users') {
@@ -1663,6 +1668,10 @@ onMounted(() => {
   } else if (activeTab.value === 'games') {
     loadPresetGames();
   }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleEsc);
 });
 </script>
 

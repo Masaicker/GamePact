@@ -290,6 +290,13 @@ const formatHistoryRecord = (session: any): string => {
   return result;
 };
 
+// ESC 关闭弹窗逻辑
+const handleEsc = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    if (showPasswordDialog.value) showPasswordDialog.value = false;
+  }
+};
+
 // 修改密码相关
 const showPasswordDialog = ref(false);
 // 监听弹窗显示，锁定滚动
@@ -366,6 +373,7 @@ const handleChangePassword = async () => {
 };
 
 onMounted(() => {
+  window.addEventListener('keydown', handleEsc);
   fetchLeaderboard();
   fetchSessions();
   fetchHistorySessions();
@@ -375,6 +383,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleEsc);
   // 移除刷新事件监听
   window.removeEventListener('gamepact:refresh', handleRefresh);
 });
@@ -692,9 +701,14 @@ onUnmounted(() => {
 
     <!-- 修改密码对话框 -->
     <teleport to="body">
-      <div v-if="showPasswordDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div v-if="showPasswordDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" @click.self="showPasswordDialog = false">
         <div class="card w-full max-w-md p-6">
-          <h3 class="title-subsection mb-4 text-[#f5f0e6]">修改登录密码</h3>
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="title-subsection text-[#f5f0e6]">修改登录密码</h3>
+            <button @click="showPasswordDialog = false" class="btn btn-ghost">
+              <Icon icon="mdi:close" class="h-5 w-5" />
+            </button>
+          </div>
           
           <div class="mb-4">
             <label class="block text-sm font-mono-retro text-[#c4b8a8] mb-1">旧密码</label>
@@ -754,9 +768,6 @@ onUnmounted(() => {
           </div>
           
           <div class="flex justify-end space-x-3">
-            <button @click="showPasswordDialog = false" class="btn btn-ghost">
-              取消
-            </button>
             <button @click="handleChangePassword" :disabled="changingPassword" class="btn btn-primary">
               {{ changingPassword ? '提交中...' : '确认修改' }}
             </button>
