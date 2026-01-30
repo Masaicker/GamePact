@@ -3,7 +3,7 @@
     <div class="notification-slider">
       <transition name="slide-up">
         <div v-if="currentMessage" :key="currentMessageKey" class="notification-message">
-          {{ currentMessage }}
+          {{ displayedMessage }}
         </div>
         <div v-else key="placeholder" class="notification-placeholder">
           请输入文本
@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 // 当前显示的消息
 const currentMessage = ref<string | null>(null);
@@ -24,6 +24,51 @@ const currentMessageKey = ref<number>(0);
 const messageQueue: string[] = [];
 // 定时器
 let nextMessageTimer: number | null = null;
+
+// 容器宽度（px）
+const CONTAINER_WIDTH = 300;
+
+// 尾部省略号截断函数
+const truncateEnd = (text: string, maxWidth: number): string => {
+  // 估算字符宽度（中文约13px，英文约7px）
+  const estimateWidth = (str: string) => {
+    return Array.from(str).reduce((width, char) => {
+      if (/[\u4e00-\u9fa5]/.test(char)) {
+        return width + 13;
+      } else if (/[a-zA-Z0-9]/.test(char)) {
+        return width + 7;
+      } else {
+        return width + 10;
+      }
+    }, 0);
+  };
+
+  const textWidth = estimateWidth(text);
+  if (textWidth <= maxWidth) {
+    return text;
+  }
+
+  // 计算可用的宽度（留出 "..." 的宽度，约15px）
+  const availableWidth = maxWidth - 15;
+
+  // 从前向后截取
+  let result = '';
+  let currentWidth = 0;
+  for (const char of text) {
+    const charWidth = /[\u4e00-\u9fa5]/.test(char) ? 13 : (/[a-zA-Z0-9]/.test(char) ? 7 : 10);
+    if (currentWidth + charWidth > availableWidth) break;
+    result += char;
+    currentWidth += charWidth;
+  }
+
+  return result + '...';
+};
+
+// 计算实际显示的消息（可能被截断）
+const displayedMessage = computed(() => {
+  if (!currentMessage.value) return '';
+  return truncateEnd(currentMessage.value, CONTAINER_WIDTH);
+});
 
 // 处理队列中的下一条消息
 const processNextMessage = () => {
@@ -70,7 +115,7 @@ defineExpose({
 
 <style scoped>
 .notification-wrapper {
-  width: 280px;
+  width: 300px;
   height: 24px;
   overflow: hidden;
   position: relative;
