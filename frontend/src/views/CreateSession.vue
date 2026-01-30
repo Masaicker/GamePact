@@ -266,8 +266,22 @@ const onDragStart = (e: DragEvent, index: number) => {
 
 const onDragOver = (e: DragEvent, index: number) => {
   e.preventDefault();
-  if (draggedIndex.value === null || draggedIndex.value === index) return;
+  
+  // === 边缘自动滚动逻辑 ===
+  const TOP_THRESHOLD = 180;    // 顶部触发滚动的距离（考虑导航栏）
+  const BOTTOM_THRESHOLD = 150; // 底部触发滚动的距离
+  const SCROLL_SPEED = 20;      // 每次滚动的像素量
 
+  if (e.clientY < TOP_THRESHOLD) {
+    // 靠近顶部，向上滚
+    window.scrollBy(0, -SCROLL_SPEED);
+  } else if (e.clientY > window.innerHeight - BOTTOM_THRESHOLD) {
+    // 靠近底部，向下滚
+    window.scrollBy(0, SCROLL_SPEED);
+  }
+
+  if (draggedIndex.value === null || draggedIndex.value === index) return;
+  
   // 交换位置
   const newOptions = [...gameOptions.value];
   const [removed] = newOptions.splice(draggedIndex.value, 1);
@@ -279,7 +293,6 @@ const onDragOver = (e: DragEvent, index: number) => {
 const onDragEnd = () => {
   draggedIndex.value = null;
 };
-
 // 提交创建
 const handleSubmit = async () => {
   // 检测：有链接/图片但没名字的选项
@@ -571,27 +584,51 @@ onMounted(() => {
       </div>
     </div>
 
-                <!-- 预设游戏对话框 -->
+                    <!-- 预设游戏对话框 -->
 
-                <teleport to="body">
+                    <teleport to="body">
 
-                  <div 
+                      <div 
 
-                    v-if="showPresetGameDialog" 
+                        v-if="showPresetGameDialog" 
 
-                    class="fixed inset-0 z-[60] flex items-center justify-center bg-transparent"
+                        class="fixed inset-0 z-[57] flex items-center justify-center bg-transparent"
 
-                    @click.self="showPresetGameDialog = false"
+                        @click.self="showPresetGameDialog = false"
 
-                  >            <div 
-              class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-hidden flex flex-col"
-              :style="{ transform: `translate(${dialogOffset.x}px, ${dialogOffset.y}px)` }"
-            >          <div
-              class="mb-4 flex items-center justify-between cursor-move select-none"
-              @mousedown="startDrag"
-          >
-            <h3 class="title-subsection text-[#f5f0e6]">选择预设游戏</h3>
-            <button @click="showPresetGameDialog = false" class="btn btn-ghost">
+                      >
+
+                        <div 
+
+                          class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-hidden flex flex-col"
+
+                          :style="{ transform: `translate(${dialogOffset.x}px, ${dialogOffset.y}px)` }"
+
+                        >
+
+                                    <div 
+
+                                      class="mb-4 flex items-center justify-between cursor-move select-none group/title relative"
+
+                                      @mousedown="startDrag"
+
+                                    >
+
+                                      <h3 class="title-subsection text-[#f5f0e6]">选择预设游戏</h3>
+
+                                      
+
+                                      <!-- 居中拖拽图标 -->
+
+                                      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+
+                                        <Icon icon="mdi:drag-horizontal-variant" class="h-6 w-6 text-[#8b8178] opacity-40 group-hover/title:opacity-100 transition-opacity" />
+
+                                      </div>
+
+                          
+
+                                      <button @click="showPresetGameDialog = false" class="btn btn-ghost">
               <Icon icon="mdi:close" class="h-5 w-5" />
             </button>
           </div>

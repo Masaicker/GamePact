@@ -82,7 +82,7 @@ body::after {
 #app {
   min-height: 100vh;
   position: relative;
-  z-index: 1;
+  z-index: auto;
 }
 
 /* 滚动条样式 */
