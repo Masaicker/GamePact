@@ -701,7 +701,7 @@ onUnmounted(() => {
 
     <!-- 修改密码对话框 -->
     <teleport to="body">
-      <div v-if="showPasswordDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" @click.self="showPasswordDialog = false">
+      <div v-if="showPasswordDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
         <div class="card w-full max-w-md p-6">
           <div class="mb-4 flex items-center justify-between">
             <h3 class="title-subsection text-[#f5f0e6]">修改登录密码</h3>
