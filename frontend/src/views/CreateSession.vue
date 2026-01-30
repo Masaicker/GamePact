@@ -215,18 +215,30 @@ const onDragEnd = () => {
 
 // 提交创建
 const handleSubmit = async () => {
-  // 过滤空选项（只保留有名字的）
+  // 检测：有链接/图片但没名字的选项
+  const missingNameIndices: number[] = [];
+  gameOptions.value.forEach((opt, index) => {
+    if (!opt.name?.trim() && (opt.link?.trim() || opt.images?.length)) {
+      missingNameIndices.push(index + 1);
+    }
+  });
+  if (missingNameIndices.length > 0) {
+    ElMessage.warning(`第 ${missingNameIndices.join('、')} 个选项请填写游戏名称`);
+    return;
+  }
+
+  // 过滤：只保留有名字的选项
   const validOptions = gameOptions.value
     .filter(opt => opt.name?.trim())
     .map(({ name, link, images }) => {
       const trimmedLink = link?.trim() || undefined;
       // 如果是 Steam 游戏，强制忽略手动添加的图片
       const isSteam = trimmedLink && extractSteamAppId(trimmedLink);
-      
-      return { 
-        name: name.trim(), 
+
+      return {
+        name: name.trim(),
         link: trimmedLink,
-        images: (!isSteam && images && images.length > 0) ? images : undefined 
+        images: (!isSteam && images && images.length > 0) ? images : undefined
       };
     });
 
