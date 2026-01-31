@@ -766,6 +766,7 @@ import { Icon } from '@iconify/vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi, authApi } from '../api';
 import { extractSteamAppId } from '../utils/steam';
+import { fuzzyMatch } from '../utils/fuzzySearch';
 
 // ESC 关闭弹窗逻辑
 const handleEsc = (e: KeyboardEvent) => {
@@ -1450,9 +1451,9 @@ const filteredGames = computed(() => {
   if (!gameSearchQuery.value.trim()) {
     return presetGames.value;
   }
-  const query = gameSearchQuery.value.toLowerCase();
+  const query = gameSearchQuery.value;
   return presetGames.value.filter((game) =>
-    game.name.toLowerCase().includes(query)
+    fuzzyMatch(query, game.name)
   );
 });
 

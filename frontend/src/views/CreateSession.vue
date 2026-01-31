@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { extractSteamAppId } from '../utils/steam';
+import { fuzzyMatch } from '../utils/fuzzySearch';
 import { sessionsApi } from '../api';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../stores/user';
@@ -46,6 +47,25 @@ const presetGameSearch = ref('');
 const loadingPresetGames = ref(false);
 const showPresetGameDialog = ref(false);
 const showImageDialog = ref(false);
+
+// 防误触：记录 mousedown 是否发生在弹窗内
+const isMouseDownInsideDialog = ref(false);
+const handleDialogMouseDown = (e: MouseEvent) => {
+  isMouseDownInsideDialog.value = true;
+  // 阻止冒泡到遮罩，防止触发遮罩的 mousedown
+  e.stopPropagation();
+};
+const handleDialogMouseUp = () => {
+  setTimeout(() => {
+    isMouseDownInsideDialog.value = false;
+  }, 0);
+};
+// 遮罩上的 mousedown 直接关闭（此时标志位还未被设置，因为已阻止冒泡）
+const handleOverlayMouseDown = () => {
+  if (!isMouseDownInsideDialog.value) {
+    showPresetGameDialog.value = false;
+  }
+};
 
 // 弹窗拖拽逻辑
 const dialogOffset = ref({ x: 0, y: 0 });
@@ -160,9 +180,9 @@ const filteredPresetGames = computed(() => {
   if (!presetGameSearch.value.trim()) {
     return presetGames.value;
   }
-  const query = presetGameSearch.value.toLowerCase();
+  const query = presetGameSearch.value;
   return presetGames.value.filter((game) =>
-      game.name.toLowerCase().includes(query)
+      fuzzyMatch(query, game.name)
   );
 });
 
@@ -601,21 +621,25 @@ onUnmounted(() => {
 
                     <teleport to="body">
 
-                      <div 
+                      <div
 
-                        v-if="showPresetGameDialog" 
+                        v-if="showPresetGameDialog"
 
                         class="fixed inset-0 z-[57] flex items-center justify-center bg-transparent"
 
-                        @click.self="showPresetGameDialog = false"
+                        @mousedown.self="handleOverlayMouseDown"
+
+                        @mouseup="handleDialogMouseUp"
 
                       >
 
-                        <div 
+                        <div
 
                           class="card w-full max-w-2xl p-6 max-h-[80vh] overflow-hidden flex flex-col"
 
                           :style="{ transform: `translate(${dialogOffset.x}px, ${dialogOffset.y}px)` }"
+
+                          @mousedown="handleDialogMouseDown"
 
                         >
 
