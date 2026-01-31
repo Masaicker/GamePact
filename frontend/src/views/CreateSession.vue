@@ -681,7 +681,7 @@ onUnmounted(() => {
           </div>
 
           <!-- 游戏列表区域 -->
-          <div class="flex-1 overflow-y-auto min-h-0">
+          <div class="flex-1 overflow-y-auto min-h-0 overscroll-contain">
             <div v-if="loadingPresetGames" class="py-8 text-center font-mono-retro text-[#8b8178]">
               > 加载中...
             </div>
