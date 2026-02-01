@@ -52,12 +52,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
-    path: '/icon-test',
-    name: 'IconTest',
-    component: () => import('../views/IconTest.vue'),
-    meta: { requiresAuth: false },
-  },
-  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     redirect: '/',

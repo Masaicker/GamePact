@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue';
 import { useUserStore } from '../stores/user';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import VanillaTilt from 'vanilla-tilt';
 
 const userStore = useUserStore();
 
 const cardRefs = ref<HTMLElement[]>([]);
 const hoveredIndex = ref<number | null>(null);
+const isReverse = ref(false);
 
 const cards = [
   {
@@ -16,44 +17,73 @@ const cards = [
     title: '民主投票',
   },
   {
-    icon: 'mdi:shield-account',
-    iconColor: 'text-[#a34d1d]',
-    title: '信誉系统',
+    icon: 'mdi:scale-balance',
+    iconColor: 'text-[#ef4444]',
+    title: '信誉积分',
   },
   {
-    icon: 'mdi:trophy',
-    iconColor: 'text-[#6b9b7a]',
-    title: '徽章收藏',
+    icon: 'mdi:medal',
+    iconColor: 'text-[#fbbf24]',
+    title: '荣誉徽章',
   },
   {
     icon: 'mdi:lightning-bolt',
-    iconColor: 'text-[#4a9eff]',
-    title: '实时同步',
+    iconColor: 'text-[#3b82f6]',
+    title: '实时响应',
   },
   {
-    icon: 'mdi:cog',
-    iconColor: 'text-[#8b7355]',
-    title: '管理后台',
+    icon: 'mdi:coffee-off',
+    iconColor: 'text-[#14b8a6]',
+    title: '无责请假',
   },
   {
-    icon: 'mdi:shield-lock',
-    iconColor: 'text-[#d4a017]',
-    title: '安全防护',
+    icon: 'mdi:history',
+    iconColor: 'text-[#d97706]',
+    title: '战绩档案',
+  },
+  {
+    icon: 'mdi:bird',
+    iconColor: 'text-[#a8a29e]',
+    title: '鸽子雷达',
+  },
+  {
+    icon: 'mdi:playlist-edit',
+    iconColor: 'text-[#8b5cf6]',
+    title: '自由提议',
   },
 ];
 
-onMounted(() => {
-  cardRefs.value.forEach((el, index) => {
+const updateTilt = () => {
+  cardRefs.value.forEach((el) => {
+    if (!el) return;
+    
+    // 如果已存在实例，先销毁
+    if ((el as any).vanillaTilt) {
+      (el as any).vanillaTilt.destroy();
+    }
+
+    // 重新初始化
     VanillaTilt.init(el, {
       max: 10,
       speed: 300,
       glare: true,
       'max-glare': 0.3,
       scale: 1.05,
+      reverse: isReverse.value,
       'full-page-listening': false,
       gyroscope: false,
     });
+  });
+};
 
+watch(isReverse, () => {
+  updateTilt();
+});
+
+onMounted(() => {
+  // 绑定鼠标事件（只需绑定一次）
+  cardRefs.value.forEach((el, index) => {
+    if (!el) return;
     el.addEventListener('mouseenter', () => {
       hoveredIndex.value = index;
     });
@@ -62,6 +92,9 @@ onMounted(() => {
       hoveredIndex.value = null;
     });
   });
+
+  // 初始化 Tilt
+  updateTilt();
 });
 
 onUnmounted(() => {
@@ -91,8 +124,30 @@ onUnmounted(() => {
         </p>
       </div>
 
+      <!-- 交互控制开关 -->
+      <div class="mb-8 flex justify-center items-center space-x-4">
+        <span class="font-mono-retro text-xs text-[#8b8178]" :class="{ 'text-[#c4941f] font-bold': !isReverse }">
+          <Icon icon="mdi:arrow-up-bold" class="inline mb-0.5" /> 浮起
+        </span>
+        
+        <button 
+          @click="isReverse = !isReverse"
+          class="relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+          :class="isReverse ? 'bg-[#a34d1d]' : 'bg-[#c4941f]'"
+        >
+          <div 
+            class="absolute top-1 left-1 bg-[#f5f0e6] w-4 h-4 rounded-full transition-transform duration-300 shadow-md"
+            :class="isReverse ? 'translate-x-6' : 'translate-x-0'"
+          ></div>
+        </button>
+
+        <span class="font-mono-retro text-xs text-[#8b8178]" :class="{ 'text-[#a34d1d] font-bold': isReverse }">
+          <Icon icon="mdi:arrow-down-bold" class="inline mb-0.5" /> 按压
+        </span>
+      </div>
+
       <!-- 特性 -->
-                  <div class="grid gap-3 md:grid-cols-3 lg:grid-cols-6 mb-12 w-fit mx-auto px-4">
+                  <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12 w-fit mx-auto px-4">
                     <div
                       v-for="(card, index) in cards"
                       :key="index"
@@ -118,7 +173,7 @@ onUnmounted(() => {
                         </div>
                       </div>
                     </div>
-                  </div>      <!-- CTA -->
+                  </div>
       <div v-if="!userStore.isAuthenticated" class="flex flex-col items-center space-y-4">
         <router-link to="/register" class="btn btn-primary px-12 py-4 text-lg">
           <Icon icon="mdi:rocket-launch" class="mr-2 h-6 w-6" />
