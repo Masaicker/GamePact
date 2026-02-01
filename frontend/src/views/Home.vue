@@ -1,8 +1,74 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue';
 import { useUserStore } from '../stores/user';
+import { onMounted, onUnmounted, ref } from 'vue';
+import VanillaTilt from 'vanilla-tilt';
 
 const userStore = useUserStore();
+
+const cardRefs = ref<HTMLElement[]>([]);
+const hoveredIndex = ref<number | null>(null);
+
+const cards = [
+  {
+    icon: 'mdi:vote',
+    iconColor: 'text-[#c4941f]',
+    title: '民主投票',
+  },
+  {
+    icon: 'mdi:shield-account',
+    iconColor: 'text-[#a34d1d]',
+    title: '信誉系统',
+  },
+  {
+    icon: 'mdi:trophy',
+    iconColor: 'text-[#6b9b7a]',
+    title: '徽章收藏',
+  },
+  {
+    icon: 'mdi:lightning-bolt',
+    iconColor: 'text-[#4a9eff]',
+    title: '实时同步',
+  },
+  {
+    icon: 'mdi:cog',
+    iconColor: 'text-[#8b7355]',
+    title: '管理后台',
+  },
+  {
+    icon: 'mdi:shield-lock',
+    iconColor: 'text-[#d4a017]',
+    title: '安全防护',
+  },
+];
+
+onMounted(() => {
+  cardRefs.value.forEach((el, index) => {
+    VanillaTilt.init(el, {
+      max: 10,
+      speed: 300,
+      glare: true,
+      'max-glare': 0.3,
+      scale: 1.05,
+      'full-page-listening': false,
+      gyroscope: false,
+    });
+
+    el.addEventListener('mouseenter', () => {
+      hoveredIndex.value = index;
+    });
+
+    el.addEventListener('mouseleave', () => {
+      hoveredIndex.value = null;
+    });
+  });
+});
+
+onUnmounted(() => {
+  cardRefs.value.forEach((el) => {
+    (el as any).vanillaTilt?.destroy();
+  });
+});
 </script>
 
 <template>
@@ -26,45 +92,32 @@ const userStore = useUserStore();
       </div>
 
       <!-- 特性 -->
-      <div class="grid gap-8 md:grid-cols-3 mb-12">
-        <div class="card p-6 border-2 border-[#6b5a45] bg-[#1a1814] hover:border-[#c4941f] transition-all">
-          <div class="mb-4 flex justify-center">
-            <Icon icon="mdi:vote" class="h-16 w-16 text-[#c4941f]" />
-          </div>
-          <h3 class="mb-2 title-subsection text-[#f5f0e6]">
-            民主投票
-          </h3>
-          <p class="font-mono-retro text-[#8b8178]">
-            投票决定今晚玩什么游戏，告别选择困难症
-          </p>
-        </div>
-
-        <div class="card p-6 border-2 border-[#6b5a45] bg-[#1a1814] hover:border-[#c4941f] transition-all">
-          <div class="mb-4 flex justify-center">
-            <Icon icon="mdi:shield-account" class="h-16 w-16 text-[#a34d1d]" />
-          </div>
-          <h3 class="mb-2 title-subsection text-[#f5f0e6]">
-            信誉系统
-          </h3>
-          <p class="font-mono-retro text-[#8b8178]">
-            RP（信誉点数）记录谁守信、谁放鸽子
-          </p>
-        </div>
-
-        <div class="card p-6 border-2 border-[#6b5a45] bg-[#1a1814] hover:border-[#c4941f] transition-all">
-          <div class="mb-4 flex justify-center">
-            <Icon icon="mdi:trophy" class="h-16 w-16 text-[#6b9b7a]" />
-          </div>
-          <h3 class="mb-2 title-subsection text-[#f5f0e6]">
-            徽章收藏
-          </h3>
-          <p class="font-mono-retro text-[#8b8178]">
-            解锁各种徽章，展示你的游戏成就
-          </p>
-        </div>
-      </div>
-
-      <!-- CTA -->
+                  <div class="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-12 max-w-6xl mx-auto">
+                    <div
+                      v-for="(card, index) in cards"
+                      :key="index"
+                      :ref="(el) => { if (el) cardRefs[index] = el as HTMLElement; }"
+                      data-tilt
+                      class="tilt-card mx-auto w-48"
+                    >
+                      <div class="card-lifter">
+                        <div
+                          class="card-visuals flex flex-col h-full justify-between py-8 border-2 border-[#6b5a45] bg-[#1a1814] transition-all duration-300"
+                          :class="{
+                            'visuals-active': hoveredIndex === index,
+                            'visuals-inactive': hoveredIndex !== null && hoveredIndex !== index
+                          }"
+                        >
+                          <div class="flex justify-center">
+                            <Icon :icon="card.icon" class="h-16 w-16" :class="card.iconColor" />
+                          </div>
+                          <h3 class="title-subsection text-[#f5f0e6]">
+                            {{ card.title }}
+                          </h3>
+                        </div>
+                      </div>
+                    </div>
+                  </div>      <!-- CTA -->
       <div v-if="!userStore.isAuthenticated" class="flex flex-col items-center space-y-4">
         <router-link to="/register" class="btn btn-primary px-12 py-4 text-lg">
           <Icon icon="mdi:rocket-launch" class="mr-2 h-6 w-6" />
@@ -87,5 +140,30 @@ const userStore = useUserStore();
 </template>
 
 <style scoped>
-/* 无额外样式 */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  aspect-ratio: 1 / 1.4;
+}
+
+.card-lifter {
+  transform-style: preserve-3d;
+  transform: translateZ(20px);
+  width: 100%;
+  height: 100%;
+}
+
+.card-visuals:hover, .visuals-active {
+  border-color: #c4941f;
+}
+
+.visuals-active {
+  z-index: 10;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.visuals-inactive {
+  opacity: 0.4;
+  filter: brightness(0.5) grayscale(0.3);
+}
 </style>
