@@ -87,7 +87,7 @@ const handleRegister = async () => {
           <h2 class="title-display text-[#f5f0e6]">
             注册 GamePact
           </h2>
-          <p class="font-mono-retro mt-2 text-[#8b8178]">「不鸽，才是真爱」</p>
+          <p class="font-mono-retro mt-2 text-[#8b8178]">「是啊，玩什么」</p>
         </div>
 
         <form @submit.prevent="handleRegister" class="space-y-4">

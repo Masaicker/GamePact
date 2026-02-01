@@ -20,8 +20,8 @@ const userStore = useUserStore();
           GamePact
           <span class="cursor-blink"></span>
         </h1>
-        <p class="font-mono-retro text-xl text-[#c4941f]">
-          游戏公约 - 不鸽，才是真爱
+        <p class="text-xl text-[#c4941f] font-sans">
+          好玩，爱玩，多玩
         </p>
       </div>
 

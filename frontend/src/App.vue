@@ -129,7 +129,7 @@ onUnmounted(() => {
               </div>
               <span class="nav-logo">GamePact</span>
             </router-link>
-            <span class="nav-tagline">「不鸽，才是真爱」</span>
+            <span class="nav-tagline">「是啊，玩什么」</span>
           </div>
           <!-- 通知栏 -->
           <NotificationBar ref="notificationBarRef" />
