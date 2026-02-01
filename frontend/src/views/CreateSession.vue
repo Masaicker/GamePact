@@ -7,9 +7,11 @@ import { fuzzyMatch } from '../utils/fuzzySearch';
 import { sessionsApi } from '../api';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../stores/user';
+import { useNavigation } from '../composables/useNavigation';
 
 const router = useRouter();
 const userStore = useUserStore();
+const { goBack } = useNavigation();
 
 // 检查是否是管理员
 const isAdmin = computed(() => userStore.user?.isAdmin || false);
@@ -421,7 +423,7 @@ onUnmounted(() => {
     <div class="max-w-3xl mx-auto">
       <!-- 返回按钮 -->
       <button
-          @click="router.back()"
+          @click="goBack()"
           class="btn btn-ghost mb-6"
       >
         <Icon icon="mdi:arrow-left" class="mr-2 h-5 w-5" />

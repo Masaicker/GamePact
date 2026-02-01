@@ -5,9 +5,11 @@ import { Icon } from '@iconify/vue';
 import { usersApi } from '../api';
 import { ElMessage } from 'element-plus';
 import axios from 'axios';
+import { useNavigation } from '../composables/useNavigation';
 
 const route = useRoute();
 const router = useRouter();
+const { goBack } = useNavigation();
 
 const user = ref<any>(null);
 const history = ref<any[]>([]);
@@ -230,7 +232,7 @@ onMounted(() => {
     <div v-else-if="user" class="max-w-4xl mx-auto space-y-6">
       <!-- 返回按钮 -->
       <button
-        @click="router.back()"
+        @click="goBack()"
         class="btn btn-ghost mb-4"
       >
         <Icon icon="mdi:arrow-left" class="mr-2 h-5 w-5" />

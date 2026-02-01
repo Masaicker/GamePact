@@ -6,10 +6,12 @@ import { sessionsApi } from '../api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '../stores/user';
 import { getGameCardBackground, getSessionHeaderBackground, getGamePortraitBackground } from '../utils/steam';
+import { useNavigation } from '../composables/useNavigation';
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const { goBack } = useNavigation();
 
 const session = ref<any>(null);
 const loading = ref(false);
@@ -450,7 +452,7 @@ onUnmounted(() => {
     <div v-else-if="session" class="max-w-4xl mx-auto space-y-6">
       <!-- 返回按钮 -->
       <button
-        @click="router.back()"
+        @click="goBack()"
         class="btn btn-ghost"
       >
         <Icon icon="mdi:arrow-left" class="mr-2 h-5 w-5" />
