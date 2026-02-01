@@ -92,13 +92,14 @@ onUnmounted(() => {
       </div>
 
       <!-- 特性 -->
-                  <div class="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-12 max-w-6xl mx-auto">
+                  <div class="grid gap-3 md:grid-cols-3 lg:grid-cols-6 mb-12 w-fit mx-auto px-4">
                     <div
                       v-for="(card, index) in cards"
                       :key="index"
                       :ref="(el) => { if (el) cardRefs[index] = el as HTMLElement; }"
                       data-tilt
                       class="tilt-card mx-auto w-48"
+                      :class="{ 'relative z-50': hoveredIndex === index }"
                     >
                       <div class="card-lifter">
                         <div
@@ -165,5 +166,9 @@ onUnmounted(() => {
 .visuals-inactive {
   opacity: 0.4;
   filter: brightness(0.5) grayscale(0.3);
+}
+
+:deep(.js-tilt-glare) {
+  transform: translateZ(30px);
 }
 </style>
