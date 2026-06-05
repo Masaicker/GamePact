@@ -1,0 +1,12 @@
+VITE_PORT=36536
+VITE_API_URL=http://43.248.139.208:36535/api
+VITE_ALLOWED_HOSTS=mc32.rhymc.com
+
+
+
+PORT=36535
+NODE_ENV=development
+DATABASE_URL="file:./dev.db"
+JWT_SECRET=自动生成
+BASE_URL=http://localhost:36535
+CORS_ORIGIN=*
